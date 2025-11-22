@@ -2,7 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
-  <title>SyncOperator – DMG MORI Workbench</title>
+  <title>SyncOperator – Channel Workbench</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="stylesheet" href="style.css" />
 </head>
@@ -15,7 +15,7 @@
           <span class="status-dot"></span>
           <div>
             <div class="app-title">SyncOperator</div>
-            <div class="app-subtitle">DMG MORI · Gildemeister-Struktur</div>
+            <div class="app-subtitle">Kanal- und Spindelplanung</div>
           </div>
         </div>
       </div>
@@ -24,7 +24,6 @@
           <span class="app-meta-label">Projekt</span>
           <span class="app-meta-value">WORKPIECE_1A</span>
         </div>
-        <div class="app-logo">DMG&nbsp;MORI</div>
       </div>
     </header>
 
@@ -68,7 +67,7 @@
           <div>
             <div class="section-title">Operation Library</div>
             <div class="section-subtitle">
-              Tippen oder ziehen, um Operationen zuzuweisen
+              Klick oder Drag &amp; Drop · Edit im Modal
             </div>
           </div>
           <button
@@ -115,9 +114,9 @@
     <section class="card plan-card">
       <div class="section-header">
         <div>
-          <div class="section-title">Plan – DMG MORI Struktur</div>
+          <div class="section-title">Plan – Kanal / Spindel</div>
           <div class="section-subtitle">
-            Revolver oben/unten · Kanal 1/2 · Spindel 3/4
+            Kanal 1/2 · Spindel 3/4 · Reihenfolge 1…N
           </div>
         </div>
       </div>
@@ -129,7 +128,7 @@
   </div>
 
   <!-- MODAL ROOT -->
-  <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+  <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
     <div class="modal-backdrop"></div>
     <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
       <div class="modal-header">
