@@ -13,10 +13,7 @@
   --danger: #ef4444;
   --radius-lg: 18px;
   --radius-md: 12px;
-  --radius-sm: 999px;
-  --shadow-soft: 0 12px 30px rgba(15, 23, 42, 0.08);
   --shadow-card: 0 10px 25px rgba(15, 23, 42, 0.06);
-  --shadow-soft-inner: 0 0 0 1px rgba(148, 163, 184, 0.25);
   --transition-fast: 0.15s ease;
   --transition-slow: 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
   --font-main: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
@@ -120,19 +117,6 @@ body {
 .app-meta-value {
   font-size: 12px;
   font-weight: 600;
-}
-
-.app-logo {
-  font-size: 12px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(15, 23, 42, 0.16);
-  background: radial-gradient(circle at top left, #22c55e 0, #16a34a 40%, #047857 100%);
-  color: #f9fafb;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.22);
 }
 
 @media (max-width: 640px) {
@@ -248,10 +232,6 @@ body {
 .kanal-option.active {
   color: #111827;
   font-weight: 600;
-}
-
-.kanal-label {
-  text-transform: none;
 }
 
 .kanal-chip {
@@ -539,7 +519,7 @@ body {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  cursor: grab;
+  cursor: pointer;
   user-select: none;
   transition: box-shadow var(--transition-fast), transform 0.06s ease,
     background var(--transition-fast), border-color var(--transition-fast);
@@ -552,7 +532,6 @@ body {
 }
 
 .op-card:active {
-  cursor: grabbing;
   transform: translateY(1px);
   box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
 }
@@ -787,22 +766,18 @@ body {
   min-width: 84px;
 }
 
-.modal-footer .btn-outline-danger {
+.btn-outline-danger {
   border-color: rgba(239, 68, 68, 0.3);
   color: #b91c1c;
   background: #fef2f2;
 }
 
-.modal-footer .btn-outline-danger:hover {
+.btn-outline-danger:hover {
   background: #fee2e2;
   border-color: #ef4444;
 }
 
 /* Utility */
-
-.hidden {
-  display: none !important;
-}
 
 .text-muted {
   color: var(--text-muted);
