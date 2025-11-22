@@ -1,1 +1,159 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>SyncOperator – DMG MORI Workbench</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-title-row">
+          <span class="status-dot"></span>
+          <div>
+            <div class="app-title">SyncOperator</div>
+            <div class="app-subtitle">DMG MORI · Gildemeister-Struktur</div>
+          </div>
+        </div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-meta">
+          <span class="app-meta-label">Projekt</span>
+          <span class="app-meta-value">WORKPIECE_1A</span>
+        </div>
+        <div class="app-logo">DMG&nbsp;MORI</div>
+      </div>
+    </header>
 
+    <!-- MAIN LAYOUT -->
+    <main class="layout-main">
+      <!-- LEFT: PROGRAMMPLAN -->
+      <section class="card slots-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Programmplan</div>
+            <div class="section-subtitle">
+              Slots mit Operationen (Drag &amp; Drop)
+            </div>
+          </div>
+          <div class="kanal-switcher" id="kanalSwitcher">
+            <div class="kanal-pill-bg kanal-1" id="kanalPillBg"></div>
+            <button class="kanal-option active" type="button" data-kanal="1">
+              <span class="kanal-label">Kanal 1</span>
+              <span class="kanal-chip">1000.MPF</span>
+            </button>
+            <button class="kanal-option" type="button" data-kanal="2">
+              <span class="kanal-label">Kanal 2</span>
+              <span class="kanal-chip">2000.MPF</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="kanal-hint" id="kanalHint">Revolver oben · Kanal 1</div>
+
+        <div id="slotList" class="slot-list"></div>
+
+        <button id="addSlotBtn" class="btn-outline add-slot-btn" type="button">
+          <span class="btn-icon">＋</span>
+          <span>Weitere Zeile</span>
+        </button>
+      </section>
+
+      <!-- RIGHT: OPERATION LIBRARY -->
+      <section class="card library-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Operation Library</div>
+            <div class="section-subtitle">
+              Tippen oder ziehen, um Operationen zuzuweisen
+            </div>
+          </div>
+          <button
+            type="button"
+            class="icon-button subtle"
+            id="infoButton"
+            aria-label="Info"
+          >
+            <span class="icon-circle">i</span>
+          </button>
+        </div>
+
+        <div class="library-filters" id="libraryFilters"></div>
+
+        <div id="libraryList" class="library-list"></div>
+
+        <form id="addOpForm" class="library-form" autocomplete="off">
+          <input
+            type="text"
+            id="opNameInput"
+            class="field-input"
+            placeholder="Neue Operation…"
+            required
+          />
+          <select id="opSpindleSelect" class="field-select">
+            <option value="SP4">SP4 (grün)</option>
+            <option value="SP3">SP3 (blau)</option>
+          </select>
+          <select id="opCategorySelect" class="field-select">
+            <option value="Außen">Außen Bearbeitung</option>
+            <option value="Innen">Innen Bearbeitung</option>
+            <option value="Radial">Radial Bearbeitung</option>
+            <option value="Axial">Axial</option>
+          </select>
+          <button type="submit" class="btn-primary">
+            <span class="btn-icon">＋</span>
+            <span>Op hinzufügen</span>
+          </button>
+        </form>
+      </section>
+    </main>
+
+    <!-- PLAN -->
+    <section class="card plan-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Plan – DMG MORI Struktur</div>
+          <div class="section-subtitle">
+            Revolver oben/unten · Kanal 1/2 · Spindel 3/4
+          </div>
+        </div>
+      </div>
+
+      <div class="plan-table-wrapper">
+        <table class="plan-table" id="planTable"></table>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL ROOT -->
+  <div id="modalOverlay" class="modal-overlay hidden" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <span class="modal-icon-circle">i</span>
+        </div>
+        <div class="modal-header-text">
+          <div id="modalTitle" class="modal-title"></div>
+          <div id="modalDescription" class="modal-description"></div>
+        </div>
+        <button
+          type="button"
+          class="icon-button subtle"
+          id="modalCloseButton"
+          aria-label="Schließen"
+        >
+          ×
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
