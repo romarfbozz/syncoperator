@@ -674,7 +674,6 @@ function initExportButton() {
   const btn = $("#exportPdfBtn");
   if (!btn) return;
   btn.addEventListener("click", () => {
-    // Браузерный print → пользователь выбирает "Als PDF speichern"
     window.print();
   });
 }
