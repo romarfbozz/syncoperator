@@ -57,7 +57,7 @@ body {
   }
 }
 
-/* HEADER (упростил, меньше «игрушки») */
+/* HEADER */
 
 .app-header {
   display: flex;
@@ -232,7 +232,7 @@ body {
   }
 }
 
-/* SECTION HEADER – чуть более техничный стиль */
+/* SECTION HEADER */
 
 .section-header {
   display: flex;
@@ -256,7 +256,7 @@ body {
   color: var(--text-muted);
 }
 
-/* KANAL SWITCHER – как нормальные кнопки, без бегунка */
+/* KANAL SWITCHER – кнопки */
 
 .kanal-switcher-wrapper {
   display: flex;
@@ -272,10 +272,6 @@ body {
   border-radius: 999px;
   background: #f3f4f6;
   border: 1px solid #d1d5db;
-}
-
-.kanal-pill-bg {
-  display: none;
 }
 
 .kanal-option {
@@ -556,6 +552,11 @@ body {
   font-weight: 400;
 }
 
+.badge-tag {
+  background: #e0ecff;
+  color: #1d4ed8;
+}
+
 /* LIBRARY */
 
 .library-card {
@@ -700,6 +701,51 @@ body {
   border-color: var(--accent);
   background: #ffffff;
   box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.15);
+}
+
+/* Toggle Doppelhalter */
+
+.toggle-row {
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 4px;
+}
+
+.toggle-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  font-size: 11px;
+  cursor: pointer;
+  user-select: none;
+  transition: background var(--transition-fast), border-color var(--transition-fast),
+    box-shadow var(--transition-fast), color var(--transition-fast);
+}
+
+.toggle-pill.active {
+  background: #111827;
+  border-color: #020617;
+  color: #f9fafb;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.3);
+}
+
+.toggle-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+  border: 2px solid #9ca3af;
+  background: #f9fafb;
+  box-sizing: border-box;
+  transition: border-color var(--transition-fast), background var(--transition-fast);
+}
+
+.toggle-pill.active .toggle-dot {
+  border-color: #22c55e;
+  background: #bbf7d0;
 }
 
 /* PLAN TABLE */
