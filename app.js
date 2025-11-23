@@ -432,6 +432,7 @@ function renderSlots() {
     container.dataset.index = String(i);
 
     container.addEventListener("dragover", onSlotDragOver);
+    container.addEventListener("dragenter", onSlotDragEnter);
     container.addEventListener("dragleave", onSlotDragLeave);
     container.addEventListener("drop", onSlotDrop);
 
@@ -450,8 +451,10 @@ function renderSlots() {
       container.setAttribute("draggable", "true");
 
       container.addEventListener("dragstart", (e) => {
+        // перенос слота
+        const payload = { kind: "slot", index: i };
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", `slot:${i}`);
+        e.dataTransfer.setData("text/plain", JSON.stringify(payload));
       });
 
       const title = document.createElement("div");
@@ -515,11 +518,21 @@ function renderSlots() {
       renderPlan();
     });
 
+    // чтобы кнопка не воровала drop/dnd
+    clearBtn.addEventListener("dragover", (e) => e.stopPropagation());
+    clearBtn.addEventListener("drop", (e) => e.stopPropagation());
+
     actions.appendChild(clearBtn);
 
     container.append(idx, main, actions);
     list.appendChild(container);
   }
+}
+
+function onSlotDragEnter(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  this.classList.add("drag-over");
 }
 
 function onSlotDragOver(e) {
@@ -541,24 +554,28 @@ function onSlotDrop(e) {
   e.stopPropagation();
   this.classList.remove("drag-over");
 
-  const payload = e.dataTransfer.getData("text/plain");
-  if (!payload) return;
+  const raw = e.dataTransfer.getData("text/plain");
+  if (!raw) return;
 
-  const [kind, value] = payload.split(":", 2);
+  let payload;
+  try {
+    payload = JSON.parse(raw);
+  } catch {
+    return;
+  }
+
   const targetIndex = Number(this.dataset.index);
-  const kanalSlots = state.slots[state.currentKanal];
-
   if (Number.isNaN(targetIndex)) return;
 
-  if (kind === "op") {
-    // drop из библиотеки
-    const opId = value;
+  const kanalSlots = state.slots[state.currentKanal];
+
+  if (payload.kind === "op") {
+    const opId = payload.id;
     if (!opId) return;
     ensureSlotCount(state.currentKanal, targetIndex + 1);
     kanalSlots[targetIndex] = opId;
-  } else if (kind === "slot") {
-    // перестановка слотов
-    const fromIndex = Number(value);
+  } else if (payload.kind === "slot") {
+    const fromIndex = Number(payload.index);
     if (
       Number.isNaN(fromIndex) ||
       fromIndex === targetIndex ||
@@ -567,12 +584,10 @@ function onSlotDrop(e) {
     ) {
       return;
     }
-    const item = kanalSlots[fromIndex];
-    if (!item) return;
-
-    kanalSlots.splice(fromIndex, 1);
-    const insertIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
-    kanalSlots.splice(insertIndex, 0, item);
+    const [moved] = kanalSlots.splice(fromIndex, 1);
+    kanalSlots.splice(targetIndex, 0, moved);
+  } else {
+    return;
   }
 
   renderSlots();
@@ -634,8 +649,9 @@ function renderLibraryList() {
     card.setAttribute("draggable", "true");
 
     card.addEventListener("dragstart", (e) => {
+      const payload = { kind: "op", id: op.id };
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", `op:${op.id}`);
+      e.dataTransfer.setData("text/plain", JSON.stringify(payload));
     });
 
     card.addEventListener("click", () => {
