@@ -914,6 +914,11 @@ body {
     border: none;
   }
 
+  /* Убираем заголовок и кнопку в распечатке */
+  .plan-card .section-header {
+    display: none !important;
+  }
+
   .plan-table-wrapper {
     border: none;
   }
