@@ -13,7 +13,7 @@
   --danger: #ef4444;
   --radius-lg: 18px;
   --radius-md: 12px;
-  --shadow-card: 0 14px 35px rgba(15, 23, 42, 0.08);
+  --shadow-card: 0 16px 40px rgba(15, 23, 42, 0.12);
   --transition-fast: 0.15s ease;
   --transition-slow: 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
   --font-main: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
@@ -34,7 +34,10 @@ body {
 
 body {
   font-family: var(--font-main);
-  background: radial-gradient(circle at top, #e5e7eb 0, #f9fafb 40%, #eef2ff 100%);
+  background:
+    radial-gradient(circle at top, rgba(191, 219, 254, 0.8) 0, transparent 40%),
+    radial-gradient(circle at 20% 60%, rgba(187, 247, 208, 0.7) 0, transparent 40%),
+    linear-gradient(to bottom, #e5e7eb 0, #f9fafb 40%, #e5e7eb 100%);
   color: var(--text-main);
 }
 
@@ -44,13 +47,13 @@ body {
   max-width: 1200px;
   margin: 0 auto;
   min-height: 100vh;
-  padding: 16px 12px 32px;
+  padding: 18px 12px 32px;
 }
 
 @media (min-width: 768px) {
   .app-shell {
     padding-inline: 24px;
-    padding-top: 20px;
+    padding-top: 22px;
   }
 }
 
@@ -60,7 +63,15 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 16px;
+  margin-bottom: 18px;
+  padding: 10px 14px;
+  border-radius: 20px;
+  background: rgba(249, 250, 251, 0.85);
+  backdrop-filter: blur(14px);
+  border: 1px solid rgba(148, 163, 184, 0.4);
+  box-shadow:
+    0 18px 36px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
 }
 
 .app-header-left {
@@ -69,18 +80,53 @@ body {
   gap: 12px;
 }
 
+.app-logo-mark {
+  width: 40px;
+  height: 40px;
+  border-radius: 16px;
+  background:
+    radial-gradient(circle at 10% 0, #dbeafe 0, #93c5fd 40%, #1d4ed8 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow:
+    0 10px 20px rgba(15, 23, 42, 0.35),
+    0 0 0 1px rgba(248, 250, 252, 0.9) inset;
+}
+
+.app-logo-inner {
+  width: 30px;
+  height: 30px;
+  border-radius: 12px;
+  background: radial-gradient(circle at bottom, #022c22 0, #020617 60%, #0b1120 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.app-logo-main {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f9fafb;
+}
+
+.app-logo-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #a5b4fc;
+}
+
+.app-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
 .app-title-row {
   display: flex;
   align-items: center;
-  gap: 10px;
-}
-
-.status-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 999px;
-  background: #22c55e;
-  box-shadow: 0 0 0 4px rgba(34, 197, 94, 0.25);
+  gap: 8px;
 }
 
 .app-title {
@@ -88,6 +134,32 @@ body {
   font-weight: 700;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(22, 163, 74, 0.2);
+  background: rgba(220, 252, 231, 0.8);
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #22c55e;
+  box-shadow: 0 0 0 3px rgba(74, 222, 128, 0.45);
+}
+
+.status-text {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #166534;
 }
 
 .app-subtitle {
@@ -123,7 +195,7 @@ body {
   .app-header {
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
 
   .app-header-right {
@@ -193,7 +265,8 @@ body {
   border-radius: 999px;
   border: 1px solid #d1d5db;
   background: #e5e7eb;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6),
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   overflow: hidden;
 }
@@ -290,6 +363,11 @@ body {
   background: #e5e7eb;
 }
 
+.btn-small {
+  padding: 4px 9px;
+  font-size: 10px;
+}
+
 .btn-icon {
   font-size: 13px;
 }
@@ -377,7 +455,7 @@ body {
   border-style: solid;
   border-color: var(--border-strong);
   background: #ffffff;
-  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.08);
 }
 
 .slot-row.drag-over {
@@ -577,6 +655,49 @@ body {
   justify-content: flex-end;
 }
 
+/* FORM ELEMENTS (MODAL) */
+
+.form-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.form-group {
+  flex: 1;
+  margin-bottom: 6px;
+}
+
+.form-group--code {
+  flex: 0 0 110px;
+}
+
+.form-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.field-input,
+.field-select {
+  width: 100%;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  padding: 6px 10px;
+  font-size: 11px;
+  outline: none;
+  background: #f9fafb;
+  transition: border-color var(--transition-fast), background var(--transition-fast),
+    box-shadow var(--transition-fast);
+}
+
+.field-input:focus,
+.field-select:focus {
+  border-color: var(--accent);
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.15);
+}
+
 /* PLAN TABLE */
 
 .plan-card {
@@ -756,4 +877,34 @@ body {
 
 .text-danger {
   color: var(--danger);
+}
+
+/* PRINT (PDF EXPORT) */
+
+@media print {
+  body {
+    background: #ffffff;
+  }
+
+  .app-shell {
+    max-width: none;
+    padding: 0;
+  }
+
+  .app-header,
+  .layout-main,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  .plan-card {
+    margin: 0;
+    border-radius: 0;
+    box-shadow: none;
+    border: none;
+  }
+
+  .plan-table-wrapper {
+    border: none;
+  }
 }
