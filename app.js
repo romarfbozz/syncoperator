@@ -8,6 +8,7 @@ const state = {
     "1": Array(MIN_SLOTS).fill(null),
     "2": Array(MIN_SLOTS).fill(null),
   },
+  // operations: {id, code, title, spindle, category}
   library: [],
   categories: ["Alle", "Außen", "Innen", "Radial", "Axial"],
   activeCategory: "Alle",
@@ -21,14 +22,47 @@ function getOperationById(id) {
   return state.library.find((op) => op.id === id) || null;
 }
 
+function formatOperationLabel(op) {
+  if (!op) return "";
+  const code = (op.code || "").trim();
+  const title = (op.title || "").trim();
+  if (code && title) return `${code} – ${title}`;
+  return code || title;
+}
+
 // 5 демо-операций + демо-раскладка
 function createDefaultLibrary() {
   const defs = [
-    { name: "L1101 – Außen Schruppen", spindle: "SP4", category: "Außen" },
-    { name: "L1102 – Innen Schlichten", spindle: "SP3", category: "Innen" },
-    { name: "L2101 – Einstechen", spindle: "SP3", category: "Radial" },
-    { name: "L2104 – Scheibenfräsen", spindle: "SP4", category: "Axial" },
-    { name: "Probe – Außendurchmesser", spindle: "SP3", category: "Radial" },
+    {
+      code: "L1101",
+      title: "Außen Schruppen",
+      spindle: "SP4",
+      category: "Außen",
+    },
+    {
+      code: "L1102",
+      title: "Innen Schlichten",
+      spindle: "SP3",
+      category: "Innen",
+    },
+    {
+      code: "L2101",
+      title: "Einstechen",
+      spindle: "SP3",
+      category: "Radial",
+    },
+    {
+      code: "L2104",
+      title: "Scheibenfräsen",
+      spindle: "SP4",
+      category: "Axial",
+    },
+    {
+      code: "L3001",
+      title: "Probe Außendurchmesser",
+      spindle: "SP3",
+      category: "Radial",
+    },
   ];
 
   state.library = defs.map((def) => ({
@@ -79,7 +113,7 @@ function openInfoModal() {
   const body = $("#modalBody");
   body.innerHTML = `
     <p class="text-muted">
-      • Klick auf eine Operation öffnet den Editor (Name, Spindel, Kategorie).<br>
+      • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie).<br>
       • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
       • Klick auf belegten Slot öffnet ebenfalls den Editor.<br>
       • SP3 = blau, SP4 = grün.
@@ -95,7 +129,7 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-// единый редактор: create + edit
+// единый редактор: create + edit, с отдельным полем L-Code
 function openOperationEditor(opId = null) {
   const isEdit = !!opId;
   const existing = isEdit ? getOperationById(opId) : null;
@@ -104,31 +138,50 @@ function openOperationEditor(opId = null) {
 
   openModalBase({
     title: isEdit ? "Operation bearbeiten" : "Neue Operation",
-    description: "Name, Spindel und Kategorie einstellen.",
+    description: "L-Code, Name, Spindel und Kategorie einstellen.",
   });
 
   const body = $("#modalBody");
 
-  // Name
+  // Первая строка: L-Code + Name
+  const row1 = document.createElement("div");
+  row1.className = "form-row";
+
+  const codeGroup = document.createElement("div");
+  codeGroup.className = "form-group form-group--code";
+  const codeLabel = document.createElement("div");
+  codeLabel.className = "form-label";
+  codeLabel.textContent = "L-Code";
+  const codeInput = document.createElement("input");
+  codeInput.type = "text";
+  codeInput.className = "field-input";
+  codeInput.placeholder = "L2101";
+  codeInput.value = existing ? (existing.code || "") : "";
+  codeGroup.append(codeLabel, codeInput);
+
   const nameGroup = document.createElement("div");
-  nameGroup.style.marginBottom = "6px";
+  nameGroup.className = "form-group";
   const nameLabel = document.createElement("div");
+  nameLabel.className = "form-label";
   nameLabel.textContent = "Name";
-  nameLabel.style.fontSize = "11px";
-  nameLabel.style.marginBottom = "2px";
   const nameInput = document.createElement("input");
   nameInput.type = "text";
   nameInput.className = "field-input";
-  nameInput.value = existing ? existing.name : "";
+  nameInput.placeholder = "Einstechen";
+  nameInput.value = existing ? (existing.title || "") : "";
   nameGroup.append(nameLabel, nameInput);
 
-  // Spindle
+  row1.append(codeGroup, nameGroup);
+
+  // Вторая строка: Spindel + Kategorie
+  const row2 = document.createElement("div");
+  row2.className = "form-row";
+
   const spindleGroup = document.createElement("div");
-  spindleGroup.style.marginBottom = "6px";
+  spindleGroup.className = "form-group";
   const spindleLabel = document.createElement("div");
+  spindleLabel.className = "form-label";
   spindleLabel.textContent = "Spindel";
-  spindleLabel.style.fontSize = "11px";
-  spindleLabel.style.marginBottom = "2px";
   const spindleSelect = document.createElement("select");
   spindleSelect.className = "field-select";
   spindleSelect.innerHTML = `
@@ -138,13 +191,11 @@ function openOperationEditor(opId = null) {
   spindleSelect.value = existing ? existing.spindle : "SP4";
   spindleGroup.append(spindleLabel, spindleSelect);
 
-  // Category
   const catGroup = document.createElement("div");
-  catGroup.style.marginBottom = "2px";
+  catGroup.className = "form-group";
   const catLabel = document.createElement("div");
+  catLabel.className = "form-label";
   catLabel.textContent = "Kategorie";
-  catLabel.style.fontSize = "11px";
-  catLabel.style.marginBottom = "2px";
   const catSelect = document.createElement("select");
   catSelect.className = "field-select";
   catSelect.innerHTML = `
@@ -156,7 +207,9 @@ function openOperationEditor(opId = null) {
   catSelect.value = existing ? existing.category : "Außen";
   catGroup.append(catLabel, catSelect);
 
-  body.append(nameGroup, spindleGroup, catGroup);
+  row2.append(spindleGroup, catGroup);
+
+  body.append(row1, row2);
 
   const footer = $("#modalFooter");
 
@@ -172,8 +225,13 @@ function openOperationEditor(opId = null) {
   saveBtn.textContent = isEdit ? "Speichern" : "Anlegen";
 
   saveBtn.addEventListener("click", () => {
-    const name = nameInput.value.trim();
-    if (!name) {
+    const code = codeInput.value.trim();
+    const title = nameInput.value.trim();
+    if (!code) {
+      codeInput.focus();
+      return;
+    }
+    if (!title) {
       nameInput.focus();
       return;
     }
@@ -182,13 +240,15 @@ function openOperationEditor(opId = null) {
     const category = catSelect.value;
 
     if (isEdit) {
-      existing.name = name;
+      existing.code = code;
+      existing.title = title;
       existing.spindle = spindle;
       existing.category = category;
     } else {
       const newOp = {
         id: "op_" + state.nextOpId++,
-        name,
+        code,
+        title,
         spindle,
         category,
       };
@@ -217,7 +277,7 @@ function openDeleteOperationModal(opId) {
   body.innerHTML = `
     <p>
       Möchtest du die Operation<br>
-      <strong>${op.name}</strong><br>
+      <strong>${formatOperationLabel(op)}</strong><br>
       wirklich löschen?
     </p>
   `;
@@ -361,7 +421,7 @@ function renderSlots() {
 
       const title = document.createElement("div");
       title.className = "slot-title";
-      title.textContent = op.name;
+      title.textContent = formatOperationLabel(op);
       main.appendChild(title);
 
       const meta = document.createElement("div");
@@ -383,9 +443,8 @@ function renderSlots() {
       meta.append(label, badgeSp, badgeCat);
       main.appendChild(meta);
 
-      // Клик по заполненному слоту → открыть редактор
+      // Клик по заполненному слоту → редактор
       container.addEventListener("click", (e) => {
-        // не триггерить при клике по кнопке удаления
         if (e.target.closest(".slot-actions")) return;
         openOperationEditor(opId);
       });
@@ -512,7 +571,7 @@ function renderLibraryList() {
 
     const title = document.createElement("div");
     title.className = "op-title";
-    title.textContent = op.name;
+    title.textContent = formatOperationLabel(op);
 
     const footer = document.createElement("div");
     footer.className = "op-footer";
@@ -559,7 +618,7 @@ function initAddOperationButton() {
   btn.addEventListener("click", () => openOperationEditor(null));
 }
 
-// ---------- PLAN --------------------------------------------------------
+// ---------- PLAN (inkl. PDF via Print) ----------------------------------
 
 function renderPlan() {
   const table = $("#planTable");
@@ -590,10 +649,13 @@ function renderPlan() {
     const op1 = op1Id ? getOperationById(op1Id) : null;
     const op2 = op2Id ? getOperationById(op2Id) : null;
 
-    const c1sp3 = op1 && op1.spindle === "SP3" ? op1.name : "";
-    const c1sp4 = op1 && op1.spindle === "SP4" ? op1.name : "";
-    const c2sp3 = op2 && op2.spindle === "SP3" ? op2.name : "";
-    const c2sp4 = op2 && op2.spindle === "SP4" ? op2.name : "";
+    const label1 = formatOperationLabel(op1);
+    const label2 = formatOperationLabel(op2);
+
+    const c1sp3 = op1 && op1.spindle === "SP3" ? label1 : "";
+    const c1sp4 = op1 && op1.spindle === "SP4" ? label1 : "";
+    const c2sp3 = op2 && op2.spindle === "SP3" ? label2 : "";
+    const c2sp4 = op2 && op2.spindle === "SP4" ? label2 : "";
 
     html += "<tr>";
     html += `<td class="plan-row-index">${i + 1}</td>`;
@@ -608,6 +670,15 @@ function renderPlan() {
   table.innerHTML = html;
 }
 
+function initExportButton() {
+  const btn = $("#exportPdfBtn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
+    // Браузерный print → пользователь выбирает "Als PDF speichern"
+    window.print();
+  });
+}
+
 // ---------- INIT --------------------------------------------------------
 
 function init() {
@@ -616,6 +687,7 @@ function init() {
   initAddSlotButton();
   initAddOperationButton();
   initModalBaseEvents();
+  initExportButton();
   renderSlots();
   renderLibraryFilters();
   renderLibraryList();
