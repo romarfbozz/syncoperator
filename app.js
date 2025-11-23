@@ -29,13 +29,13 @@ function getOperationById(id) {
   return state.library.find((op) => op.id === id) || null;
 }
 
-// Базовый формат без динамики (для Library, редактора и т.п.)
+// Базовый формат: Name L-Code
 function formatOperationLabel(op) {
   if (!op) return "";
-  const code = (op.code || "").trim();
   const title = (op.title || "").trim();
-  if (code && title) return `${code} – ${title}`;
-  return code || title;
+  const code = (op.code || "").trim();
+  if (title && code) return `${title} ${code}`;
+  return title || code || "";
 }
 
 // ---------- ДИНАМИЧЕСКИЙ L-КОД -----------------------------------------
@@ -50,15 +50,17 @@ function getDynamicLCode(kanal, rowNumber) {
   return prefix + suffix;
 }
 
+// Формат в слотах/плане: Name L11xx / Name L21xx
 function formatOperationLabelDynamic(op, kanal, rowNumber) {
   if (!op) return "";
   const dyn = getDynamicLCode(kanal, rowNumber);
   const title = (op.title || "").trim();
   const fallback = (op.code || "").trim();
   const name = title || fallback;
-  if (dyn && name) return `${dyn} – ${name}`;
+  if (name && dyn) return `${name} ${dyn}`;
+  if (name) return name;
   if (dyn) return dyn;
-  return formatOperationLabel(op);
+  return "";
 }
 
 // ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
@@ -204,7 +206,7 @@ function initJsonExportImport() {
   }
 }
 
-// ---------- DEFAULT DATA (из последнего JSON) ---------------------------
+// ---------- DEFAULT DATA (последний JSON) -------------------------------
 
 const DEFAULT_DATA = {
   currentKanal: "2",
@@ -596,6 +598,7 @@ function openInfoModal() {
       • Klick auf leeren Slot öffnet die Auswahlliste der Operationen inkl. Filter.<br>
       • Programmplan-Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
       • L-Code im Plan richtet sich nach Kanal und Zeile (L11xx / L21xx).<br>
+      • Anzeigeformat: Name L-Code.<br>
       • SP3 = blau, SP4 = grün.
     </p>
   `;
@@ -1202,7 +1205,7 @@ function renderLibraryList() {
 
     const title = document.createElement("div");
     title.className = "op-title";
-    // В библиотеке показываем базовый код
+    // В библиотеке: Name L-Code
     title.textContent = formatOperationLabel(op);
 
     const footer = document.createElement("div");
@@ -1390,6 +1393,7 @@ function openSlotOperationPicker(slotIndex) {
 
       const title = document.createElement("div");
       title.className = "op-title";
+      // Picker: Name L-Code
       title.textContent = formatOperationLabel(op);
 
       const footer = document.createElement("div");
@@ -1499,7 +1503,7 @@ function renderPlan() {
     // Kanal 2: Sp3 (с жирным разделителем), Sp4
     html += `<td class="plan-cell kanal-divider">${c2sp3}</td>`;
     html += `<td class="plan-cell">${c2sp4}</td>`;
-    html += "</tr>";
+    html += "</tr>`;
   }
 
   html += "</tbody>";
