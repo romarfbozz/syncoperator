@@ -13,7 +13,7 @@
   --danger: #ef4444;
   --radius-lg: 18px;
   --radius-md: 12px;
-  --shadow-card: 0 10px 25px rgba(15, 23, 42, 0.06);
+  --shadow-card: 0 14px 35px rgba(15, 23, 42, 0.08);
   --transition-fast: 0.15s ease;
   --transition-slow: 0.22s cubic-bezier(0.22, 0.61, 0.36, 1);
   --font-main: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
@@ -86,7 +86,7 @@ body {
 .app-title {
   font-size: 18px;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -193,8 +193,8 @@ body {
   border-radius: 999px;
   border: 1px solid #d1d5db;
   background: #e5e7eb;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.4);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.6),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   overflow: hidden;
 }
 
@@ -205,7 +205,7 @@ body {
   width: 50%;
   border-radius: 999px;
   background: #ffffff;
-  box-shadow: 0 1px 3px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 3px 6px rgba(15, 23, 42, 0.22);
   transition: transform var(--transition-slow);
 }
 
@@ -270,10 +270,10 @@ body {
 }
 
 .btn-primary {
-  background: var(--accent);
+  background: #111827;
   color: #f9fafb;
   border-color: #020617;
-  box-shadow: 0 6px 14px rgba(15, 23, 42, 0.25);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.28);
 }
 
 .btn-primary:hover {
@@ -300,7 +300,7 @@ body {
   box-shadow: none;
 }
 
-/* ICON BUTTON */
+/* ICON BUTTONS / SVG */
 
 .icon-button {
   border: none;
@@ -315,7 +315,7 @@ body {
 }
 
 .icon-button:hover {
-  background: rgba(148, 163, 184, 0.22);
+  background: rgba(148, 163, 184, 0.2);
 }
 
 .icon-button:active {
@@ -337,6 +337,12 @@ body {
   font-size: 13px;
   font-weight: 600;
   color: #0f172a;
+}
+
+.icon-svg {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 /* SLOTS */
@@ -371,7 +377,7 @@ body {
   border-style: solid;
   border-color: var(--border-strong);
   background: #ffffff;
-  box-shadow: 0 8px 16px rgba(15, 23, 42, 0.06);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
 }
 
 .slot-row.drag-over {
@@ -491,13 +497,14 @@ body {
   color: #4b5563;
   cursor: pointer;
   transition: background var(--transition-fast), border-color var(--transition-fast),
-    color var(--transition-fast);
+    color var(--transition-fast), box-shadow var(--transition-fast);
 }
 
 .filter-pill.active {
   border-color: var(--accent);
-  background: var(--accent);
+  background: #111827;
   color: #f9fafb;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.18);
 }
 
 .library-list {
@@ -528,12 +535,12 @@ body {
 .op-card:hover {
   border-color: var(--border-strong);
   background: #ffffff;
-  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.09);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.09);
 }
 
 .op-card:active {
   transform: translateY(1px);
-  box-shadow: 0 10px 22px rgba(15, 23, 42, 0.15);
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.15);
 }
 
 .op-title {
@@ -564,46 +571,10 @@ body {
   padding: 4px 2px;
 }
 
-.library-form {
-  display: grid;
-  grid-template-columns: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr) auto;
-  gap: 6px;
-  align-items: center;
-  margin-top: 6px;
-}
-
-@media (max-width: 720px) {
-  .library-form {
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1fr);
-    grid-template-rows: auto auto;
-  }
-
-  .library-form button {
-    grid-column: 1 / -1;
-    justify-self: flex-start;
-  }
-}
-
-/* FIELDS */
-
-.field-input,
-.field-select {
-  width: 100%;
-  border-radius: 999px;
-  border: 1px solid #e5e7eb;
-  padding: 6px 10px;
-  font-size: 11px;
-  outline: none;
-  background: #f9fafb;
-  transition: border-color var(--transition-fast), background var(--transition-fast),
-    box-shadow var(--transition-fast);
-}
-
-.field-input:focus,
-.field-select:focus {
-  border-color: var(--accent);
-  background: #ffffff;
-  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.15);
+.library-add {
+  margin-top: 8px;
+  display: flex;
+  justify-content: flex-end;
 }
 
 /* PLAN TABLE */
