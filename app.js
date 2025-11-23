@@ -60,24 +60,24 @@ function applyLoadedState(raw) {
     }
   });
 
-  const newLib = lib
-    .map((op) => ({
-      id: op.id || "op_" + Math.random().toString(16).slice(2),
-      code: op.code || "",
-      title: op.title || "",
-      spindle: op.spindle === "SP3" ? "SP3" : "SP4",
-      category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category)
-        ? op.category
-        : "Außen",
-      doppelhalter: !!op.doppelhalter,
-    }));
+  const newLib = lib.map((op) => ({
+    id: op.id || "op_" + Math.random().toString(16).slice(2),
+    code: op.code || "",
+    title: op.title || "",
+    spindle: op.spindle === "SP3" ? "SP3" : "SP4",
+    category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category)
+      ? op.category
+      : "Außen",
+    doppelhalter: !!op.doppelhalter,
+  }));
 
   state.currentKanal = raw.currentKanal === "2" ? "2" : "1";
   state.slots = newSlots;
   state.library = newLib;
-  state.nextOpId = typeof raw.nextOpId === "number" && raw.nextOpId > 0
-    ? raw.nextOpId
-    : newLib.length + 1;
+  state.nextOpId =
+    typeof raw.nextOpId === "number" && raw.nextOpId > 0
+      ? raw.nextOpId
+      : newLib.length + 1;
   state.activeCategory = raw.activeCategory || "Alle";
 
   return true;
@@ -172,63 +172,331 @@ function initJsonExportImport() {
   }
 }
 
-// -------- DEMО: HauptSpindel Kanal 1 + GegenSpindel Kanal 2 -------------
+// ---------- ТВОЙ DEFAULT (из JSON) -------------------------------------
 
-function createDefaultLibrary() {
-  const defs = [
-    // HauptSpindel Bearbeitung / Kanal 1
-    { code: "L0101", title: "Planen / Vordrehen", spindle: "SP4", category: "Außen" },
-    { code: "L0102", title: "Bohren / Ausdrehen Ø31.5", spindle: "SP3", category: "Innen" },
-    { code: "L0103", title: "Außen Schlichten", spindle: "SP4", category: "Außen" },
-    { code: "L0104", title: "A–Gew M26×1", spindle: "SP4", category: "Außen" },
-    { code: "L0105", title: "Lochkreis Bohren Radial Ø5", spindle: "SP3", category: "Radial" },
-    { code: "L0106", title: "A–Nut Stechen Ø43", spindle: "SP3", category: "Radial" },
-    { code: "L0107", title: "Lochkreis Entgr. mit Senker Ø6", spindle: "SP3", category: "Radial" },
-    { code: "L0108", title: "6–Kant fräsen", spindle: "SP4", category: "Außen" },
-    { code: "L0109", title: "I–Nut 2× Stechen Ø13 +0.04", spindle: "SP3", category: "Innen" },
-    { code: "L0110", title: "Y-Abstechen", spindle: "SP4", category: "Axial" },
-
-    // GegenSpindel Bearbeitung / Kanal 2
-    { code: "L0201", title: "A– Planen / Vordrehen", spindle: "SP4", category: "Außen" },
-    { code: "L0202", title: "A– Schlichten", spindle: "SP4", category: "Außen" },
-    { code: "L0203", title: "I– Freistich Ø16 stechen", spindle: "SP3", category: "Innen" },
-    { code: "L0204", title: "I– Bohrung Ø13 – Fertig drehen", spindle: "SP3", category: "Innen" },
-    { code: "L0205", title: "I– Bohrungen Ø5 Bürsten", spindle: "SP3", category: "Innen" },
-    { code: "L0206", title: "A– Gew M40 × 1.5", spindle: "SP4", category: "Außen" },
-    { code: "L0207", title: "A– Gew – Entgraten / Fräsen", spindle: "SP4", category: "Außen" },
-    { code: "L0208", title: "A– Bohrungen Ø5 Bürsten", spindle: "SP4", category: "Außen" },
-    { code: "L0209", title: "A– Gew. Gang Wegfräsen", spindle: "SP4", category: "Außen" },
-    { code: "L0210", title: "A– Gew. Gang Wegfräsen", spindle: "SP4", category: "Außen" },
-    { code: "L0211", title: "I– Bohren Ø12.5", spindle: "SP3", category: "Innen" },
-    { code: "L0212", title: "A– Gew M40 × 2", spindle: "SP4", category: "Außen" },
-
-    // пара старых демо для библиотеки
-    { code: "L1101", title: "Außen Schruppen", spindle: "SP4", category: "Außen" },
-    { code: "L2101", title: "Einstechen", spindle: "SP3", category: "Radial" },
-  ];
-
-  state.library = defs.map((def) => ({
-    ...def,
-    doppelhalter: false,
-    id: "op_" + state.nextOpId++,
-  }));
-
-  const ids = state.library.map((o) => o.id);
-
-  // Kanal 1 – первые 10 операций
-  const k1 = state.slots["1"];
-  for (let i = 0; i < 10; i++) {
-    if (i >= k1.length) k1.push(null);
-    k1[i] = ids[i] || null;
-  }
-
-  // Kanal 2 – следующие 12 операций
-  const k2 = state.slots["2"];
-  for (let i = 0; i < 12; i++) {
-    if (i >= k2.length) k2.push(null);
-    k2[i] = ids[10 + i] || null;
-  }
-}
+const DEFAULT_DATA = {
+  currentKanal: "1",
+  slots: {
+    "1": [
+      "op_1",
+      "op_3",
+      "op_2",
+      "op_26",
+      "op_28",
+      "op_27",
+      "op_5",
+      "op_8",
+      "op_25",
+      "op_14",
+      "op_9",
+      "op_4",
+      "op_30",
+      "op_31",
+      "op_10",
+    ],
+    "2": [
+      "op_11",
+      "op_12",
+      "op_13",
+      "op_21",
+      "op_18",
+      "op_22",
+      "op_16",
+      "op_20",
+      "op_32",
+      "op_33",
+      "op_34",
+      "op_35",
+      "op_19",
+      "op_15",
+      "op_29",
+    ],
+  },
+  library: [
+    {
+      code: "L1101",
+      title: "Planen / Vordrehen",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_1",
+    },
+    {
+      code: "L1103",
+      title: "Bohren / Ausdrehen Ø20 Ø27 Ø32",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+      id: "op_2",
+    },
+    {
+      code: "L1102",
+      title: "Außen Schlichten",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_3",
+    },
+    {
+      code: "L1112",
+      title: "A–Gew M26×1",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+      id: "op_4",
+    },
+    {
+      code: "L1105",
+      title: "Lochkreis Bohren Radial Ø5",
+      spindle: "SP4",
+      category: "Radial",
+      doppelhalter: false,
+      id: "op_5",
+    },
+    {
+      code: "L0106",
+      title: "A–Nut Stechen Ø43",
+      spindle: "SP3",
+      category: "Radial",
+      doppelhalter: false,
+      id: "op_6",
+    },
+    {
+      code: "L0107",
+      title: "Lochkreis Entgr. mit Senker Ø6",
+      spindle: "SP3",
+      category: "Radial",
+      doppelhalter: false,
+      id: "op_7",
+    },
+    {
+      code: "L1108",
+      title: "6–Kant fräsen",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_8",
+    },
+    {
+      code: "L1111",
+      title: "I–Nut 2× Stechen Ø13 +0.04",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+      id: "op_9",
+    },
+    {
+      code: "L1115",
+      title: "Y-Abstechen",
+      spindle: "SP4",
+      category: "Axial",
+      doppelhalter: false,
+      id: "op_10",
+    },
+    {
+      code: "L2101",
+      title: "A– Planen / Vordrehen",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_11",
+    },
+    {
+      code: "L2102",
+      title: "A– Schlichten",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_12",
+    },
+    {
+      code: "L2103",
+      title: "I– Freistich Ø16 stechen",
+      spindle: "SP3",
+      category: "Innen",
+      doppelhalter: false,
+      id: "op_13",
+    },
+    {
+      code: "L1110",
+      title: "I– Bohrung Ø13 – Fertig drehen",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+      id: "op_14",
+    },
+    {
+      code: "L2114",
+      title: "I– Bohrungen Ø5 Bürsten",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: true,
+      id: "op_15",
+    },
+    {
+      code: "L2107",
+      title: "A– Gew M40 × 1.5",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_16",
+    },
+    {
+      code: "L0207",
+      title: "A– Gew – Entgraten / Fräsen",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_17",
+    },
+    {
+      code: "L2105",
+      title: "A– Bohrungen Ø5 Bürsten",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_18",
+    },
+    {
+      code: "L2113",
+      title: "A– Gew. Gang Wegfräsen",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: true,
+      id: "op_19",
+    },
+    {
+      code: "L2108",
+      title: "A– Gew. Gang Wegfräsen",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: true,
+      id: "op_20",
+    },
+    {
+      code: "L2104",
+      title: "I– Bohren Ø12.5",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+      id: "op_21",
+    },
+    {
+      code: "L2106",
+      title: "A– Gew M40 × 2",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_22",
+    },
+    {
+      code: "L1101",
+      title: "Außen Schruppen",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+      id: "op_23",
+    },
+    {
+      code: "L2101",
+      title: "Einstechen",
+      spindle: "SP3",
+      category: "Radial",
+      doppelhalter: false,
+      id: "op_24",
+    },
+    {
+      id: "op_25",
+      code: "L1109",
+      title: "Bohrungen Ø20 Ø27 Ø32 FertigDrehen",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_26",
+      code: "L1104",
+      title: "N_O_P",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_27",
+      code: "L1106",
+      title: "N_O_P",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_28",
+      code: "L1107",
+      title: "Nute 2xd43 Stechen",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_29",
+      code: "L2115",
+      title: "N_O_P",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_30",
+      code: "L1113",
+      title: "N_O_P",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_31",
+      code: "L1114",
+      title: "N_O_P",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_32",
+      code: "L2109",
+      title: "N_O_P",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_33",
+      code: "L2110",
+      title: "N_O_P",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_34",
+      code: "L2111",
+      title: "N_O_P",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_35",
+      code: "L2112",
+      title: "N_O_P",
+      spindle: "SP3",
+      category: "Außen",
+      doppelhalter: false,
+    },
+  ],
+  nextOpId: 36,
+  activeCategory: "Außen",
+};
 
 // ---------- MODAL -------------------------------------------------------
 
@@ -306,7 +574,7 @@ function openOperationEditor(opId = null) {
   codeInput.type = "text";
   codeInput.className = "field-input";
   codeInput.placeholder = "L2101";
-  codeInput.value = existing ? (existing.code || "") : "";
+  codeInput.value = existing ? existing.code || "" : "";
   codeGroup.append(codeLabel, codeInput);
 
   const nameGroup = document.createElement("div");
@@ -318,7 +586,7 @@ function openOperationEditor(opId = null) {
   nameInput.type = "text";
   nameInput.className = "field-input";
   nameInput.placeholder = "Einstechen";
-  nameInput.value = existing ? (existing.title || "") : "";
+  nameInput.value = existing ? existing.title || "" : "";
   nameGroup.append(nameLabel, nameInput);
 
   row1.append(codeGroup, nameGroup);
@@ -927,7 +1195,8 @@ function initExportButton() {
 function init() {
   const loaded = loadFromLocal();
   if (!loaded) {
-    createDefaultLibrary();
+    // если локального состояния нет — берём твой JSON как дефолт
+    applyLoadedState(DEFAULT_DATA);
     touchState();
   }
 
