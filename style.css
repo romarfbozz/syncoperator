@@ -572,9 +572,26 @@ body {
 
 .library-filters {
   display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 6px;
+}
+
+.library-filters-row,
+.library-spindle-row {
+  display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-bottom: 6px;
+}
+
+.library-spindle-row {
+  align-items: center;
+}
+
+.filter-label {
+  font-size: 10px;
+  color: var(--text-soft);
+  margin-right: 2px;
 }
 
 .filter-pill {
@@ -754,6 +771,17 @@ body {
   background: #bbf7d0;
 }
 
+/* SLOT PICKER (modal list) */
+
+.slot-picker-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 260px;
+  overflow: auto;
+  margin-top: 4px;
+}
+
 /* PLAN TABLE */
 
 .plan-card {
@@ -805,6 +833,11 @@ body {
 .plan-table .sp4-head {
   background: #16a34a;
   color: #f9fafb;
+}
+
+.plan-table .kanal-divider {
+  border-left-width: 2px;
+  border-left-color: #9ca3af;
 }
 
 .plan-row-index {
