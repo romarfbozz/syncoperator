@@ -7,6 +7,22 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <!-- SVG ICON SPRITE -->
+  <svg width="0" height="0" style="position:absolute;visibility:hidden">
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+      <path
+        d="M9 3h6a1 1 0 0 1 1 1v1h3.25a.75.75 0 0 1 0 1.5H4.75a.75.75 0 0 1 0-1.5H8V4a1 1 0 0 1 1-1Zm1.5 2.5h3V4.5h-3v1Z"
+        fill="currentColor"
+        fill-opacity="0.9"
+      />
+      <path
+        d="M7.5 8.25a.75.75 0 0 1 .75.75v8.25h.25 7.5.25V9a.75.75 0 0 1 1.5 0v8.5A1.75 1.75 0 0 1 16 19.25H8A1.75 1.75 0 0 1 6.25 17.5V9a.75.75 0 0 1 .75-.75Zm3 0a.75.75 0 0 1 .75.75v7a.75.75 0 0 1-1.5 0v-7a.75.75 0 0 1 .75-.75Zm3 0a.75.75 0 0 1 .75.75v7a.75.75 0 0 1-1.5 0v-7a.75.75 0 0 1 .75-.75Z"
+        fill="currentColor"
+        fill-opacity="0.9"
+      />
+    </symbol>
+  </svg>
+
   <div class="app-shell">
     <!-- HEADER -->
     <header class="app-header">
@@ -35,7 +51,7 @@
           <div>
             <div class="section-title">Programmplan</div>
             <div class="section-subtitle">
-              Slots mit Operationen (Drag &amp; Drop)
+              Slots mit Operationen (Klick oder Drag &amp; Drop)
             </div>
           </div>
           <div class="kanal-switcher" id="kanalSwitcher">
@@ -67,7 +83,7 @@
           <div>
             <div class="section-title">Operation Library</div>
             <div class="section-subtitle">
-              Klick oder Drag &amp; Drop · Edit im Modal
+              Klick für Editor · Drag &amp; Drop in Slots
             </div>
           </div>
           <button
@@ -84,29 +100,12 @@
 
         <div id="libraryList" class="library-list"></div>
 
-        <form id="addOpForm" class="library-form" autocomplete="off">
-          <input
-            type="text"
-            id="opNameInput"
-            class="field-input"
-            placeholder="Neue Operation…"
-            required
-          />
-          <select id="opSpindleSelect" class="field-select">
-            <option value="SP4">SP4 (grün)</option>
-            <option value="SP3">SP3 (blau)</option>
-          </select>
-          <select id="opCategorySelect" class="field-select">
-            <option value="Außen">Außen Bearbeitung</option>
-            <option value="Innen">Innen Bearbeitung</option>
-            <option value="Radial">Radial Bearbeitung</option>
-            <option value="Axial">Axial</option>
-          </select>
-          <button type="submit" class="btn-primary">
+        <div class="library-add">
+          <button id="addOpButton" type="button" class="btn-primary">
             <span class="btn-icon">＋</span>
             <span>Op hinzufügen</span>
           </button>
-        </form>
+        </div>
       </section>
     </main>
 
