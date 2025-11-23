@@ -13,6 +13,7 @@ const state = {
   library: [],
   categories: ["Alle", "Außen", "Innen", "Radial", "Axial"],
   activeCategory: "Alle",
+  spindleFilter: "ALL", // ALL | SP3 | SP4
   nextOpId: 1,
 };
 
@@ -40,6 +41,7 @@ function getSerializableState() {
     library: state.library,
     nextOpId: state.nextOpId,
     activeCategory: state.activeCategory,
+    spindleFilter: state.spindleFilter,
   };
 }
 
@@ -79,6 +81,7 @@ function applyLoadedState(raw) {
       ? raw.nextOpId
       : newLib.length + 1;
   state.activeCategory = raw.activeCategory || "Alle";
+  state.spindleFilter = raw.spindleFilter || "ALL";
 
   return true;
 }
@@ -532,6 +535,7 @@ function openInfoModal() {
     <p class="text-muted">
       • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie, Doppelhalter).<br>
       • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
+      • Klick auf leeren Slot öffnet die Auswahlliste der Operationen.<br>
       • Programmplan-Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
       • SP3 = blau, SP4 = grün.
     </p>
@@ -786,7 +790,7 @@ function initModalBaseEvents() {
   }
 }
 
-// ---------- KANAL SWITCHER ----------------------------------------------
+// ---------- KANАЛ SWITCHER ----------------------------------------------
 
 function initKanalSwitcher() {
   const hint = $("#kanalHint");
@@ -909,8 +913,13 @@ function renderSlots() {
       const placeholder = document.createElement("div");
       placeholder.className = "slot-placeholder";
       placeholder.textContent =
-        "Operation hier ablegen (Drag & Drop)";
+        "Operation hier ablegen (Drag & Drop oder Klick)";
       main.appendChild(placeholder);
+
+      // клик по пустому слоту → выбор операции
+      container.addEventListener("click", () => {
+        openSlotOperationPicker(i);
+      });
     }
 
     const actions = document.createElement("div");
@@ -1018,11 +1027,33 @@ function initAddSlotButton() {
   });
 }
 
+// ---------- LIBRARY FILTER HELPERS --------------------------------------
+
+function getFilteredOperations() {
+  let ops = state.library;
+
+  if (state.activeCategory !== "Alle") {
+    ops = ops.filter((op) => op.category === state.activeCategory);
+  }
+
+  if (state.spindleFilter === "SP3") {
+    ops = ops.filter((op) => op.spindle === "SP3");
+  } else if (state.spindleFilter === "SP4") {
+    ops = ops.filter((op) => op.spindle === "SP4");
+  }
+
+  return ops;
+}
+
 // ---------- LIBRARY ------------------------------------------------------
 
 function renderLibraryFilters() {
   const container = $("#libraryFilters");
   container.innerHTML = "";
+
+  // Row 1: категории
+  const row1 = document.createElement("div");
+  row1.className = "library-filters-row";
 
   state.categories.forEach((cat) => {
     const pill = document.createElement("button");
@@ -1037,23 +1068,54 @@ function renderLibraryFilters() {
       renderLibraryList();
       touchState();
     });
-    container.appendChild(pill);
+    row1.appendChild(pill);
   });
+
+  container.appendChild(row1);
+
+  // Row 2: Spindel Filter
+  const row2 = document.createElement("div");
+  row2.className = "library-spindle-row";
+
+  const label = document.createElement("span");
+  label.className = "filter-label";
+  label.textContent = "Spindel:";
+  row2.appendChild(label);
+
+  const spindleOptions = [
+    { value: "ALL", label: "Alle" },
+    { value: "SP4", label: "SP4 (grün)" },
+    { value: "SP3", label: "SP3 (blau)" },
+  ];
+
+  spindleOptions.forEach((opt) => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className =
+      "filter-pill" + (state.spindleFilter === opt.value ? " active" : "");
+    pill.textContent = opt.label;
+    pill.addEventListener("click", () => {
+      state.spindleFilter = opt.value;
+      renderLibraryFilters();
+      renderLibraryList();
+      touchState();
+    });
+    row2.appendChild(pill);
+  });
+
+  container.appendChild(row2);
 }
 
 function renderLibraryList() {
   const list = $("#libraryList");
   list.innerHTML = "";
 
-  let ops = state.library;
-  if (state.activeCategory !== "Alle") {
-    ops = ops.filter((op) => op.category === state.activeCategory);
-  }
+  let ops = getFilteredOperations();
 
   if (!ops.length) {
     const empty = document.createElement("div");
     empty.className = "library-empty";
-    empty.textContent = "Keine Operationen in dieser Kategorie.";
+    empty.textContent = "Keine Operationen in dieser Auswahl.";
     list.appendChild(empty);
     return;
   }
@@ -1130,6 +1192,89 @@ function initAddOperationButton() {
   btn.addEventListener("click", () => openOperationEditor(null));
 }
 
+// ---------- SLOT OPERATION PICKER (модалка для пустых слотов) -----------
+
+function openSlotOperationPicker(slotIndex) {
+  openModalBase({
+    title: "Operation auswählen",
+    description:
+      "Wähle eine Operation aus der gefilterten Liste. Kategorie- und Spindel-Filter aus der Library gelten hier ebenfalls.",
+  });
+
+  const body = $("#modalBody");
+
+  const ops = getFilteredOperations();
+  if (!ops.length) {
+    const p = document.createElement("p");
+    p.className = "text-muted";
+    p.textContent = "Keine Operationen für aktuelle Filter.";
+    body.appendChild(p);
+  } else {
+    const list = document.createElement("div");
+    list.className = "slot-picker-list";
+
+    ops.forEach((op) => {
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "op-card";
+      btn.style.width = "100%";
+
+      const title = document.createElement("div");
+      title.className = "op-title";
+      title.textContent = formatOperationLabel(op);
+
+      const footer = document.createElement("div");
+      footer.className = "op-footer";
+
+      const meta = document.createElement("div");
+      meta.className = "op-meta";
+
+      const badgeSp = document.createElement("span");
+      badgeSp.className =
+        "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
+      badgeSp.textContent = op.spindle;
+
+      const badgeCat = document.createElement("span");
+      badgeCat.className = "badge badge-soft";
+      badgeCat.textContent = op.category;
+
+      meta.append(badgeSp, badgeCat);
+
+      if (op.doppelhalter) {
+        const badgeD = document.createElement("span");
+        badgeD.className = "badge badge-tag";
+        badgeD.textContent = "Doppelhalter";
+        meta.appendChild(badgeD);
+      }
+
+      footer.append(meta);
+
+      btn.append(title, footer);
+
+      btn.addEventListener("click", () => {
+        ensureSlotCount(state.currentKanal, slotIndex + 1);
+        state.slots[state.currentKanal][slotIndex] = op.id;
+        closeModal();
+        renderSlots();
+        renderPlan();
+        touchState();
+      });
+
+      list.appendChild(btn);
+    });
+
+    body.appendChild(list);
+  }
+
+  const footer = $("#modalFooter");
+  const cancelBtn = document.createElement("button");
+  cancelBtn.type = "button";
+  cancelBtn.className = "btn-outline";
+  cancelBtn.textContent = "Abbrechen";
+  cancelBtn.addEventListener("click", closeModal);
+  footer.appendChild(cancelBtn);
+}
+
 // ---------- PLAN (inkl. PDF via Print) ----------------------------------
 
 function renderPlan() {
@@ -1143,13 +1288,15 @@ function renderPlan() {
   html += "<tr>";
   html += '<th class="plan-row-index"></th>';
   html += '<th colspan="2" class="th-group">Kanal 1 · 1000.MPF</th>';
-  html += '<th colspan="2" class="th-group">Kanal 2 · 2000.MPF</th>';
+  html += '<th colspan="2" class="th-group kanal-divider">Kanal 2 · 2000.MPF</th>';
   html += "</tr>";
   html += "<tr>";
   html += '<th class="plan-row-index"></th>';
-  html += '<th class="sp3-head">Spindel 3</th>';
+  // Kanal 1: сперва Spindel 4, потом Spindel 3
   html += '<th class="sp4-head">Spindel 4</th>';
   html += '<th class="sp3-head">Spindel 3</th>';
+  // Kanal 2: как было — Sp3, Sp4, но с жирной границей перед Sp3
+  html += '<th class="sp3-head kanal-divider">Spindel 3</th>';
   html += '<th class="sp4-head">Spindel 4</th>';
   html += "</tr>";
   html += "</thead>";
@@ -1171,9 +1318,11 @@ function renderPlan() {
 
     html += "<tr>";
     html += `<td class="plan-row-index">${i + 1}</td>`;
-    html += `<td class="plan-cell">${c1sp3}</td>`;
+    // Kanal 1: Sp4, Sp3
     html += `<td class="plan-cell">${c1sp4}</td>`;
-    html += `<td class="plan-cell">${c2sp3}</td>`;
+    html += `<td class="plan-cell">${c1sp3}</td>`;
+    // Kanal 2: Sp3 (с жирным разделителем), Sp4
+    html += `<td class="plan-cell kanal-divider">${c2sp3}</td>`;
     html += `<td class="plan-cell">${c2sp4}</td>`;
     html += "</tr>";
   }
