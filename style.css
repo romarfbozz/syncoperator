@@ -257,6 +257,12 @@ body {
 
 /* KANAL SWITCHER */
 
+.kanal-switcher-wrapper {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 6px;
+}
+
 .kanal-switcher {
   position: relative;
   display: inline-flex;
@@ -269,6 +275,7 @@ body {
     0 1px 0 rgba(255, 255, 255, 0.6),
     inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   overflow: hidden;
+  max-width: 100%;
 }
 
 .kanal-pill-bg {
@@ -321,6 +328,7 @@ body {
   font-size: 11px;
   color: var(--text-soft);
   margin-bottom: 6px;
+  text-align: center;
 }
 
 /* BUTTONS */
@@ -879,11 +887,13 @@ body {
   color: var(--danger);
 }
 
-/* PRINT (PDF EXPORT) */
+/* PRINT (PDF EXPORT, mit Farben) */
 
 @media print {
   body {
     background: #ffffff;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .app-shell {
@@ -906,5 +916,16 @@ body {
 
   .plan-table-wrapper {
     border: none;
+  }
+
+  .plan-table,
+  .plan-table th,
+  .plan-table td,
+  .plan-table thead,
+  .plan-table .sp3-head,
+  .plan-table .sp4-head,
+  .plan-table .th-group {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 }
