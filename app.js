@@ -1,6 +1,7 @@
 // ---------- STATE -------------------------------------------------------
 
 const MIN_SLOTS = 5;
+const STORAGE_KEY = "CitiTool_SyncOperator_v1";
 
 const state = {
   currentKanal: "1",
@@ -30,7 +31,148 @@ function formatOperationLabel(op) {
   return code || title;
 }
 
-// -------- DEMO: HauptSpindel Kanal 1 + GegenSpindel Kanal 2 -----------
+// ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
+
+function getSerializableState() {
+  return {
+    currentKanal: state.currentKanal,
+    slots: state.slots,
+    library: state.library,
+    nextOpId: state.nextOpId,
+    activeCategory: state.activeCategory,
+  };
+}
+
+function applyLoadedState(raw) {
+  if (!raw || typeof raw !== "object") return false;
+  const slots = raw.slots || {};
+  const lib = Array.isArray(raw.library) ? raw.library : [];
+
+  const newSlots = {
+    "1": Array.isArray(slots["1"]) ? [...slots["1"]] : Array(MIN_SLOTS).fill(null),
+    "2": Array.isArray(slots["2"]) ? [...slots["2"]] : Array(MIN_SLOTS).fill(null),
+  };
+
+  // гарантируем минимум слотов
+  ["1", "2"].forEach((k) => {
+    while (newSlots[k].length < MIN_SLOTS) {
+      newSlots[k].push(null);
+    }
+  });
+
+  const newLib = lib
+    .map((op) => ({
+      id: op.id || "op_" + Math.random().toString(16).slice(2),
+      code: op.code || "",
+      title: op.title || "",
+      spindle: op.spindle === "SP3" ? "SP3" : "SP4",
+      category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category)
+        ? op.category
+        : "Außen",
+      doppelhalter: !!op.doppelhalter,
+    }));
+
+  state.currentKanal = raw.currentKanal === "2" ? "2" : "1";
+  state.slots = newSlots;
+  state.library = newLib;
+  state.nextOpId = typeof raw.nextOpId === "number" && raw.nextOpId > 0
+    ? raw.nextOpId
+    : newLib.length + 1;
+  state.activeCategory = raw.activeCategory || "Alle";
+
+  return true;
+}
+
+function saveToLocal() {
+  try {
+    const payload = {
+      version: 1,
+      data: getSerializableState(),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+  } catch (_) {
+    // игнорируем ошибки хранилища
+  }
+}
+
+function loadFromLocal() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object" || !parsed.data) return false;
+    return applyLoadedState(parsed.data);
+  } catch (_) {
+    return false;
+  }
+}
+
+function touchState() {
+  saveToLocal();
+}
+
+function exportStateToFile() {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    data: getSerializableState(),
+  };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  const date = new Date().toISOString().slice(0, 10);
+  a.href = url;
+  a.download = `CitiTool_SyncOperator_${date}.json`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
+function initJsonExportImport() {
+  const exportBtn = $("#exportJsonBtn");
+  const importBtn = $("#importJsonBtn");
+  const fileInput = $("#importFileInput");
+
+  if (exportBtn) {
+    exportBtn.addEventListener("click", () => {
+      exportStateToFile();
+    });
+  }
+
+  if (importBtn && fileInput) {
+    importBtn.addEventListener("click", () => {
+      fileInput.value = "";
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        try {
+          const text = ev.target.result;
+          const parsed = JSON.parse(text);
+          const data = parsed && parsed.data ? parsed.data : parsed;
+          if (!applyLoadedState(data)) return;
+          touchState();
+          renderSlots();
+          renderLibraryFilters();
+          renderLibraryList();
+          renderPlan();
+        } catch (_) {
+          // битый файл — тихо игнорируем
+        }
+      };
+      reader.readAsText(file);
+    });
+  }
+}
+
+// -------- DEMО: HauptSpindel Kanal 1 + GegenSpindel Kanal 2 -------------
 
 function createDefaultLibrary() {
   const defs = [
@@ -292,6 +434,7 @@ function openOperationEditor(opId = null) {
     renderLibraryList();
     renderSlots();
     renderPlan();
+    touchState();
   });
 
   footer.append(cancelBtn, saveBtn);
@@ -341,6 +484,7 @@ function openDeleteOperationModal(opId) {
     renderLibraryList();
     renderSlots();
     renderPlan();
+    touchState();
   });
 
   footer.append(cancelBtn, deleteBtn);
@@ -404,6 +548,7 @@ function initKanalSwitcher() {
       updateHint();
       renderSlots();
       renderPlan();
+      touchState();
     });
   });
 
@@ -451,7 +596,6 @@ function renderSlots() {
       container.setAttribute("draggable", "true");
 
       container.addEventListener("dragstart", (e) => {
-        // перенос слота
         const payload = { kind: "slot", index: i };
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", JSON.stringify(payload));
@@ -516,6 +660,7 @@ function renderSlots() {
       kanalSlots[i] = null;
       renderSlots();
       renderPlan();
+      touchState();
     });
 
     // чтобы кнопка не воровала drop/dnd
@@ -592,6 +737,7 @@ function onSlotDrop(e) {
 
   renderSlots();
   renderPlan();
+  touchState();
 }
 
 function initAddSlotButton() {
@@ -600,6 +746,7 @@ function initAddSlotButton() {
     kanalSlots.push(null);
     renderSlots();
     renderPlan();
+    touchState();
   });
 }
 
@@ -620,6 +767,7 @@ function renderLibraryFilters() {
       state.activeCategory = cat;
       renderLibraryFilters();
       renderLibraryList();
+      touchState();
     });
     container.appendChild(pill);
   });
@@ -777,12 +925,18 @@ function initExportButton() {
 // ---------- INIT --------------------------------------------------------
 
 function init() {
-  createDefaultLibrary();
+  const loaded = loadFromLocal();
+  if (!loaded) {
+    createDefaultLibrary();
+    touchState();
+  }
+
   initKanalSwitcher();
   initAddSlotButton();
   initAddOperationButton();
   initModalBaseEvents();
   initExportButton();
+  initJsonExportImport();
   renderSlots();
   renderLibraryFilters();
   renderLibraryList();
