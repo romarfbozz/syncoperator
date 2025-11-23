@@ -30,9 +30,72 @@ function formatOperationLabel(op) {
   return code || title;
 }
 
-// 5 демо-операций + демо-раскладка
+// -------- DEMO-DATEN: HauptSpindel Bearbeitung Kanal 1 + старые примеры -------
+
 function createDefaultLibrary() {
   const defs = [
+    // HauptSpindel Bearbeitung Kanal 1 (10 штук)
+    {
+      code: "L0101",
+      title: "Planen / Vordrehen",
+      spindle: "SP4",
+      category: "Außen",
+    },
+    {
+      code: "L0102",
+      title: "Bohren / Ausdrehen Ø31.5",
+      spindle: "SP3",
+      category: "Innen",
+    },
+    {
+      code: "L0103",
+      title: "Außen Schlichten",
+      spindle: "SP4",
+      category: "Außen",
+    },
+    {
+      code: "L0104",
+      title: "A–Gew M26×1",
+      spindle: "SP4",
+      category: "Außen",
+    },
+    {
+      code: "L0105",
+      title: "Lochkreis Bohren Radial Ø5",
+      spindle: "SP3",
+      category: "Radial",
+    },
+    {
+      code: "L0106",
+      title: "A–Nut Stechen Ø43",
+      spindle: "SP3",
+      category: "Radial",
+    },
+    {
+      code: "L0107",
+      title: "Lochkreis Entgr. mit Senker Ø6",
+      spindle: "SP3",
+      category: "Radial",
+    },
+    {
+      code: "L0108",
+      title: "6–Kant fräsen",
+      spindle: "SP4",
+      category: "Außen",
+    },
+    {
+      code: "L0109",
+      title: "I–Nut 2× Stechen Ø13 +0.04",
+      spindle: "SP3",
+      category: "Innen",
+    },
+    {
+      code: "L0110",
+      title: "Y-Abstechen",
+      spindle: "SP4",
+      category: "Axial",
+    },
+    // старые демо-операции (для библиотеки и Kanal 2)
     {
       code: "L1101",
       title: "Außen Schruppen",
@@ -72,13 +135,19 @@ function createDefaultLibrary() {
 
   const ids = state.library.map((o) => o.id);
 
-  // Kanal 1
-  state.slots["1"][0] = ids[0] || null;
-  state.slots["1"][1] = ids[1] || null;
-  state.slots["1"][2] = ids[2] || null;
-  // Kanal 2
-  state.slots["2"][0] = ids[3] || null;
-  state.slots["2"][1] = ids[4] || null;
+  // Kanal 1: 10 операций HauptSpindel Bearbeitung
+  const k1 = state.slots["1"];
+  for (let i = 0; i < 10; i++) {
+    if (i >= k1.length) k1.push(null);
+    k1[i] = ids[i] || null;
+  }
+
+  // Kanal 2: чуть-чуть демо снизу списка
+  const k2 = state.slots["2"];
+  const base = 10;
+  if (ids[base]) k2[0] = ids[base];
+  if (ids[base + 1]) k2[1] = ids[base + 1];
+  if (ids[base + 2]) k2[2] = ids[base + 2];
 }
 
 // ---------- MODAL -------------------------------------------------------
@@ -115,7 +184,7 @@ function openInfoModal() {
     <p class="text-muted">
       • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie).<br>
       • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
-      • Klick auf belegten Slot öffnet ebenfalls den Editor.<br>
+      • Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
       • SP3 = blau, SP4 = grün.
     </p>
   `;
@@ -346,7 +415,6 @@ function initModalBaseEvents() {
 // ---------- KANAL SWITCHER ----------------------------------------------
 
 function initKanalSwitcher() {
-  const pill = $("#kanalPillBg");
   const hint = $("#kanalHint");
 
   const updateHint = () => {
@@ -371,7 +439,6 @@ function initKanalSwitcher() {
         );
       });
 
-      pill.classList.toggle("kanal-2", state.currentKanal === "2");
       updateHint();
       renderSlots();
       renderPlan();
@@ -381,7 +448,7 @@ function initKanalSwitcher() {
   updateHint();
 }
 
-// ---------- SLOTS --------------------------------------------------------
+// ---------- SLOTS (с перетаскиванием между позициями) --------------------
 
 function ensureSlotCount(kanal, count) {
   const kanalSlots = state.slots[kanal];
@@ -418,6 +485,12 @@ function renderSlots() {
 
     if (op) {
       container.classList.add("filled");
+      container.setAttribute("draggable", "true");
+
+      container.addEventListener("dragstart", (e) => {
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", `slot:${i}`);
+      });
 
       const title = document.createElement("div");
       title.className = "slot-title";
@@ -492,13 +565,37 @@ function onSlotDragLeave() {
 function onSlotDrop(e) {
   e.preventDefault();
   this.classList.remove("drag-over");
-  const opId = e.dataTransfer.getData("text/plain");
-  if (!opId) return;
+  const payload = e.dataTransfer.getData("text/plain");
+  if (!payload) return;
 
-  const idx = Number(this.dataset.index);
+  const [kind, value] = payload.split(":", 2);
+  const targetIndex = Number(this.dataset.index);
   const kanalSlots = state.slots[state.currentKanal];
-  ensureSlotCount(state.currentKanal, idx + 1);
-  kanalSlots[idx] = opId;
+
+  if (Number.isNaN(targetIndex)) return;
+
+  if (kind === "op") {
+    // drop из библиотеки
+    const opId = value;
+    if (!opId) return;
+    ensureSlotCount(state.currentKanal, targetIndex + 1);
+    kanalSlots[targetIndex] = opId;
+  } else if (kind === "slot") {
+    // перестановка слотов между собой
+    const fromIndex = Number(value);
+    if (
+      Number.isNaN(fromIndex) ||
+      fromIndex === targetIndex ||
+      fromIndex < 0 ||
+      fromIndex >= kanalSlots.length
+    ) {
+      return;
+    }
+    const item = kanalSlots[fromIndex];
+    if (!item) return;
+    kanalSlots.splice(fromIndex, 1);
+    kanalSlots.splice(targetIndex, 0, item);
+  }
 
   renderSlots();
   renderPlan();
@@ -561,7 +658,7 @@ function renderLibraryList() {
     // Drag & Drop – перенос в слоты
     card.addEventListener("dragstart", (e) => {
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", op.id);
+      e.dataTransfer.setData("text/plain", `op:${op.id}`);
     });
 
     // Клик по карточке – открыть редактор
