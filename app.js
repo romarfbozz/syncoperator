@@ -551,11 +551,13 @@ function onSlotDrop(e) {
   if (Number.isNaN(targetIndex)) return;
 
   if (kind === "op") {
+    // drop из библиотеки
     const opId = value;
     if (!opId) return;
     ensureSlotCount(state.currentKanal, targetIndex + 1);
     kanalSlots[targetIndex] = opId;
   } else if (kind === "slot") {
+    // перестановка слотов
     const fromIndex = Number(value);
     if (
       Number.isNaN(fromIndex) ||
@@ -568,7 +570,6 @@ function onSlotDrop(e) {
     const item = kanalSlots[fromIndex];
     if (!item) return;
 
-    // корректная перестановка с учётом сдвига индексов
     kanalSlots.splice(fromIndex, 1);
     const insertIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
     kanalSlots.splice(insertIndex, 0, item);
