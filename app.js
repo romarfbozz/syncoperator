@@ -8,7 +8,7 @@ const state = {
     "1": Array(MIN_SLOTS).fill(null),
     "2": Array(MIN_SLOTS).fill(null),
   },
-  // operations: {id, code, title, spindle, category}
+  // operations: {id, code, title, spindle, category, doppelhalter}
   library: [],
   categories: ["Alle", "Außen", "Innen", "Radial", "Axial"],
   activeCategory: "Alle",
@@ -30,124 +30,62 @@ function formatOperationLabel(op) {
   return code || title;
 }
 
-// -------- DEMO-DATEN: HauptSpindel Bearbeitung Kanal 1 + старые примеры -------
+// -------- DEMO: HauptSpindel Kanal 1 + GegenSpindel Kanal 2 -----------
 
 function createDefaultLibrary() {
   const defs = [
-    // HauptSpindel Bearbeitung Kanal 1 (10 штук)
-    {
-      code: "L0101",
-      title: "Planen / Vordrehen",
-      spindle: "SP4",
-      category: "Außen",
-    },
-    {
-      code: "L0102",
-      title: "Bohren / Ausdrehen Ø31.5",
-      spindle: "SP3",
-      category: "Innen",
-    },
-    {
-      code: "L0103",
-      title: "Außen Schlichten",
-      spindle: "SP4",
-      category: "Außen",
-    },
-    {
-      code: "L0104",
-      title: "A–Gew M26×1",
-      spindle: "SP4",
-      category: "Außen",
-    },
-    {
-      code: "L0105",
-      title: "Lochkreis Bohren Radial Ø5",
-      spindle: "SP3",
-      category: "Radial",
-    },
-    {
-      code: "L0106",
-      title: "A–Nut Stechen Ø43",
-      spindle: "SP3",
-      category: "Radial",
-    },
-    {
-      code: "L0107",
-      title: "Lochkreis Entgr. mit Senker Ø6",
-      spindle: "SP3",
-      category: "Radial",
-    },
-    {
-      code: "L0108",
-      title: "6–Kant fräsen",
-      spindle: "SP4",
-      category: "Außen",
-    },
-    {
-      code: "L0109",
-      title: "I–Nut 2× Stechen Ø13 +0.04",
-      spindle: "SP3",
-      category: "Innen",
-    },
-    {
-      code: "L0110",
-      title: "Y-Abstechen",
-      spindle: "SP4",
-      category: "Axial",
-    },
-    // старые демо-операции (для библиотеки и Kanal 2)
-    {
-      code: "L1101",
-      title: "Außen Schruppen",
-      spindle: "SP4",
-      category: "Außen",
-    },
-    {
-      code: "L1102",
-      title: "Innen Schlichten",
-      spindle: "SP3",
-      category: "Innen",
-    },
-    {
-      code: "L2101",
-      title: "Einstechen",
-      spindle: "SP3",
-      category: "Radial",
-    },
-    {
-      code: "L2104",
-      title: "Scheibenfräsen",
-      spindle: "SP4",
-      category: "Axial",
-    },
-    {
-      code: "L3001",
-      title: "Probe Außendurchmesser",
-      spindle: "SP3",
-      category: "Radial",
-    },
+    // HauptSpindel Bearbeitung / Kanal 1
+    { code: "L0101", title: "Planen / Vordrehen", spindle: "SP4", category: "Außen" },
+    { code: "L0102", title: "Bohren / Ausdrehen Ø31.5", spindle: "SP3", category: "Innen" },
+    { code: "L0103", title: "Außen Schlichten", spindle: "SP4", category: "Außen" },
+    { code: "L0104", title: "A–Gew M26×1", spindle: "SP4", category: "Außen" },
+    { code: "L0105", title: "Lochkreis Bohren Radial Ø5", spindle: "SP3", category: "Radial" },
+    { code: "L0106", title: "A–Nut Stechen Ø43", spindle: "SP3", category: "Radial" },
+    { code: "L0107", title: "Lochkreis Entgr. mit Senker Ø6", spindle: "SP3", category: "Radial" },
+    { code: "L0108", title: "6–Kant fräsen", spindle: "SP4", category: "Außen" },
+    { code: "L0109", title: "I–Nut 2× Stechen Ø13 +0.04", spindle: "SP3", category: "Innen" },
+    { code: "L0110", title: "Y-Abstechen", spindle: "SP4", category: "Axial" },
+
+    // GegenSpindel Bearbeitung / Kanal 2
+    { code: "L0201", title: "A– Planen / Vordrehen", spindle: "SP4", category: "Außen" },
+    { code: "L0202", title: "A– Schlichten", spindle: "SP4", category: "Außen" },
+    { code: "L0203", title: "I– Freistich Ø16 stechen", spindle: "SP3", category: "Innen" },
+    { code: "L0204", title: "I– Bohrung Ø13 – Fertig drehen", spindle: "SP3", category: "Innen" },
+    { code: "L0205", title: "I– Bohrungen Ø5 Bürsten", spindle: "SP3", category: "Innen" },
+    { code: "L0206", title: "A– Gew M40 × 1.5", spindle: "SP4", category: "Außen" },
+    { code: "L0207", title: "A– Gew – Entgraten / Fräsen", spindle: "SP4", category: "Außen" },
+    { code: "L0208", title: "A– Bohrungen Ø5 Bürsten", spindle: "SP4", category: "Außen" },
+    { code: "L0209", title: "A– Gew. Gang Wegfräsen", spindle: "SP4", category: "Außen" },
+    { code: "L0210", title: "A– Gew. Gang Wegfräsen", spindle: "SP4", category: "Außen" },
+    { code: "L0211", title: "I– Bohren Ø12.5", spindle: "SP3", category: "Innen" },
+    { code: "L0212", title: "A– Gew M40 × 2", spindle: "SP4", category: "Außen" },
+
+    // пара старых демо для библиотеки
+    { code: "L1101", title: "Außen Schruppen", spindle: "SP4", category: "Außen" },
+    { code: "L2101", title: "Einstechen", spindle: "SP3", category: "Radial" },
   ];
 
   state.library = defs.map((def) => ({
     ...def,
+    doppelhalter: false,
     id: "op_" + state.nextOpId++,
   }));
 
   const ids = state.library.map((o) => o.id);
 
-  // Kanal 1: 10 операций HauptSpindel Bearbeitung
+  // Kanal 1 – первые 10 операций
   const k1 = state.slots["1"];
   for (let i = 0; i < 10; i++) {
     if (i >= k1.length) k1.push(null);
     k1[i] = ids[i] || null;
   }
 
-  // Kanal 2: чуть-чуть демо снизу списка
+  // Kanal 2 – следующие 12 операций
   const k2 = state.slots["2"];
-  const base = 10;
-  if (ids[base]) k2[0] = ids[base];
-  if (ids[base + 1]) k2[1] = ids[base + 1];
-  if (ids[base + 2]) k2[2] = ids[base + 2];
+  for (let i = 0; i < 12; i++) {
+    if (i >= k2.length) k2.push(null);
+    k2[i] = ids[10 + i] || null;
+  }
 }
 
 // ---------- MODAL -------------------------------------------------------
@@ -174,17 +112,17 @@ function openModalBase({ title, description }) {
 
 function openInfoModal() {
   openModalBase({
-    title: "SyncOperator – Info",
+    title: "CitiTool · SyncOperator",
     description:
-      "Links Slots pro Kanal, rechts Operation Library. Unten Plan pro Kanal/Spindel.",
+      "Links Programmplan pro Kanal, rechts Operation Library. Unten Plan pro Kanal/Spindel.",
   });
 
   const body = $("#modalBody");
   body.innerHTML = `
     <p class="text-muted">
-      • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie).<br>
+      • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie, Doppelhalter).<br>
       • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
-      • Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
+      • Programmplan-Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
       • SP3 = blau, SP4 = grün.
     </p>
   `;
@@ -198,7 +136,8 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-// единый редактор: create + edit, с отдельным полем L-Code
+// единый редактор: create + edit, L-Code + Doppelhalter
+
 function openOperationEditor(opId = null) {
   const isEdit = !!opId;
   const existing = isEdit ? getOperationById(opId) : null;
@@ -207,7 +146,7 @@ function openOperationEditor(opId = null) {
 
   openModalBase({
     title: isEdit ? "Operation bearbeiten" : "Neue Operation",
-    description: "L-Code, Name, Spindel und Kategorie einstellen.",
+    description: "L-Code, Name, Spindel, Kategorie und Doppelhalter.",
   });
 
   const body = $("#modalBody");
@@ -278,7 +217,29 @@ function openOperationEditor(opId = null) {
 
   row2.append(spindleGroup, catGroup);
 
-  body.append(row1, row2);
+  // Третья строка: Doppelhalter toggle
+  const row3 = document.createElement("div");
+  row3.className = "toggle-row";
+  const toggle = document.createElement("div");
+  toggle.className = "toggle-pill";
+  const toggleDot = document.createElement("div");
+  toggleDot.className = "toggle-dot";
+  const toggleLabel = document.createElement("span");
+  toggleLabel.textContent = "Doppelhalter";
+
+  toggle.append(toggleDot, toggleLabel);
+  row3.appendChild(toggle);
+
+  const initialDoppel = existing ? !!existing.doppelhalter : false;
+  if (initialDoppel) {
+    toggle.classList.add("active");
+  }
+
+  toggle.addEventListener("click", () => {
+    toggle.classList.toggle("active");
+  });
+
+  body.append(row1, row2, row3);
 
   const footer = $("#modalFooter");
 
@@ -307,12 +268,14 @@ function openOperationEditor(opId = null) {
 
     const spindle = spindleSelect.value;
     const category = catSelect.value;
+    const doppelhalter = toggle.classList.contains("active");
 
     if (isEdit) {
       existing.code = code;
       existing.title = title;
       existing.spindle = spindle;
       existing.category = category;
+      existing.doppelhalter = doppelhalter;
     } else {
       const newOp = {
         id: "op_" + state.nextOpId++,
@@ -320,6 +283,7 @@ function openOperationEditor(opId = null) {
         title,
         spindle,
         category,
+        doppelhalter,
       };
       state.library.push(newOp);
     }
@@ -365,14 +329,12 @@ function openDeleteOperationModal(opId) {
   deleteBtn.innerHTML =
     '<span class="btn-icon"><svg class="icon-svg"><use href="#icon-trash"></use></svg></span><span>Löschen</span>';
   deleteBtn.addEventListener("click", () => {
-    // Remove from slots
     ["1", "2"].forEach((kanal) => {
       state.slots[kanal] = state.slots[kanal].map((id) =>
         id === opId ? null : id
       );
     });
 
-    // Remove from library
     state.library = state.library.filter((o) => o.id !== opId);
 
     closeModal();
@@ -448,7 +410,7 @@ function initKanalSwitcher() {
   updateHint();
 }
 
-// ---------- SLOTS (с перетаскиванием между позициями) --------------------
+// ---------- SLOTS (drag from library + перестановка слотов) -------------
 
 function ensureSlotCount(kanal, count) {
   const kanalSlots = state.slots[kanal];
@@ -514,9 +476,16 @@ function renderSlots() {
       badgeCat.textContent = op.category;
 
       meta.append(label, badgeSp, badgeCat);
+
+      if (op.doppelhalter) {
+        const badgeD = document.createElement("span");
+        badgeD.className = "badge badge-tag";
+        badgeD.textContent = "Doppelhalter";
+        meta.appendChild(badgeD);
+      }
+
       main.appendChild(meta);
 
-      // Клик по заполненному слоту → редактор
       container.addEventListener("click", (e) => {
         if (e.target.closest(".slot-actions")) return;
         openOperationEditor(opId);
@@ -555,16 +524,23 @@ function renderSlots() {
 
 function onSlotDragOver(e) {
   e.preventDefault();
+  e.stopPropagation();
+  if (e.dataTransfer) {
+    e.dataTransfer.dropEffect = "move";
+  }
   this.classList.add("drag-over");
 }
 
-function onSlotDragLeave() {
+function onSlotDragLeave(e) {
+  e.stopPropagation();
   this.classList.remove("drag-over");
 }
 
 function onSlotDrop(e) {
   e.preventDefault();
+  e.stopPropagation();
   this.classList.remove("drag-over");
+
   const payload = e.dataTransfer.getData("text/plain");
   if (!payload) return;
 
@@ -575,13 +551,11 @@ function onSlotDrop(e) {
   if (Number.isNaN(targetIndex)) return;
 
   if (kind === "op") {
-    // drop из библиотеки
     const opId = value;
     if (!opId) return;
     ensureSlotCount(state.currentKanal, targetIndex + 1);
     kanalSlots[targetIndex] = opId;
   } else if (kind === "slot") {
-    // перестановка слотов между собой
     const fromIndex = Number(value);
     if (
       Number.isNaN(fromIndex) ||
@@ -593,8 +567,11 @@ function onSlotDrop(e) {
     }
     const item = kanalSlots[fromIndex];
     if (!item) return;
+
+    // корректная перестановка с учётом сдвига индексов
     kanalSlots.splice(fromIndex, 1);
-    kanalSlots.splice(targetIndex, 0, item);
+    const insertIndex = fromIndex < targetIndex ? targetIndex - 1 : targetIndex;
+    kanalSlots.splice(insertIndex, 0, item);
   }
 
   renderSlots();
@@ -655,13 +632,11 @@ function renderLibraryList() {
     card.dataset.opId = op.id;
     card.setAttribute("draggable", "true");
 
-    // Drag & Drop – перенос в слоты
     card.addEventListener("dragstart", (e) => {
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", `op:${op.id}`);
     });
 
-    // Клик по карточке – открыть редактор
     card.addEventListener("click", () => {
       openOperationEditor(op.id);
     });
@@ -686,6 +661,13 @@ function renderLibraryList() {
     badgeCat.textContent = op.category;
 
     meta.append(badgeSp, badgeCat);
+
+    if (op.doppelhalter) {
+      const badgeD = document.createElement("span");
+      badgeD.className = "badge badge-tag";
+      badgeD.textContent = "Doppelhalter";
+      meta.appendChild(badgeD);
+    }
 
     const btnWrap = document.createElement("div");
 
