@@ -1,3 +1,5 @@
+// app.js
+
 // ---------- STATE -------------------------------------------------------
 
 const MIN_SLOTS = 5;
@@ -15,6 +17,9 @@ const state = {
   activeCategory: "Alle",
   spindleFilter: "ALL", // ALL | SP3 | SP4
   nextOpId: 1,
+  // локальные фильтры только для модалки пустого слота
+  slotPickerCategory: "Alle",
+  slotPickerSpindle: "ALL",
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -118,7 +123,7 @@ function saveToLocal() {
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
   } catch (_) {
-    // игнорируем ошибки хранилища
+    // ignore
   }
 }
 
@@ -191,7 +196,7 @@ function initJsonExportImport() {
           renderLibraryList();
           renderPlan();
         } catch (_) {
-          // битый файл — тихо игнорируем
+          // ignore
         }
       };
       reader.readAsText(file);
@@ -199,10 +204,10 @@ function initJsonExportImport() {
   }
 }
 
-// ---------- ТВОЙ DEFAULT (из JSON) -------------------------------------
+// ---------- DEFAULT DATA (из последнего JSON) ---------------------------
 
 const DEFAULT_DATA = {
-  currentKanal: "1",
+  currentKanal: "2",
   slots: {
     "1": [
       "op_1",
@@ -215,10 +220,12 @@ const DEFAULT_DATA = {
       "op_8",
       "op_25",
       "op_14",
+      "op_36",
       "op_9",
       "op_4",
       "op_30",
       "op_31",
+      "op_27",
       "op_10",
     ],
     "2": [
@@ -234,203 +241,205 @@ const DEFAULT_DATA = {
       "op_33",
       "op_34",
       "op_35",
+      null,
+      "op_37",
       "op_19",
       "op_15",
-      "op_29",
+      null,
     ],
   },
   library: [
     {
+      id: "op_1",
       code: "L1101",
       title: "Planen / Vordrehen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      id: "op_1",
     },
     {
+      id: "op_2",
       code: "L1103",
       title: "Bohren / Ausdrehen Ø20 Ø27 Ø32",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      id: "op_2",
     },
     {
+      id: "op_3",
       code: "L1102",
       title: "Außen Schlichten",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      id: "op_3",
     },
     {
-      code: "L1112",
-      title: "A–Gew M26×1",
+      id: "op_4",
+      code: "L1113",
+      title: "I–Gewinde M26×1",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      id: "op_4",
     },
     {
+      id: "op_5",
       code: "L1105",
       title: "Lochkreis Bohren Radial Ø5",
       spindle: "SP4",
       category: "Radial",
       doppelhalter: false,
-      id: "op_5",
     },
     {
+      id: "op_6",
       code: "L0106",
       title: "A–Nut Stechen Ø43",
       spindle: "SP3",
       category: "Radial",
       doppelhalter: false,
-      id: "op_6",
     },
     {
+      id: "op_7",
       code: "L0107",
       title: "Lochkreis Entgr. mit Senker Ø6",
       spindle: "SP3",
       category: "Radial",
       doppelhalter: false,
-      id: "op_7",
     },
     {
+      id: "op_8",
       code: "L1108",
       title: "6–Kant fräsen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      id: "op_8",
     },
     {
-      code: "L1111",
-      title: "I–Nut 2× Stechen Ø13 +0.04",
+      id: "op_9",
+      code: "L1112",
+      title: "I–Nut 2×Ø17.9 FertigStechen",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      id: "op_9",
     },
     {
-      code: "L1115",
+      id: "op_10",
+      code: "L1117",
       title: "Y-Abstechen",
       spindle: "SP4",
       category: "Axial",
       doppelhalter: false,
-      id: "op_10",
     },
     {
+      id: "op_11",
       code: "L2101",
       title: "A– Planen / Vordrehen",
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      id: "op_11",
     },
     {
+      id: "op_12",
       code: "L2102",
       title: "A– Schlichten",
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      id: "op_12",
     },
     {
+      id: "op_13",
       code: "L2103",
       title: "I– Freistich Ø16 stechen",
       spindle: "SP3",
       category: "Innen",
       doppelhalter: false,
-      id: "op_13",
     },
     {
+      id: "op_14",
       code: "L1110",
       title: "I– Bohrung Ø13 – Fertig drehen",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      id: "op_14",
     },
     {
-      code: "L2114",
+      id: "op_15",
+      code: "L2116",
       title: "I– Bohrungen Ø5 Bürsten",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: true,
-      id: "op_15",
     },
     {
+      id: "op_16",
       code: "L2107",
-      title: "A– Gew M40 × 1.5",
+      title: "A–Gewinde M40 × 1.5",
       spindle: "SP3",
       category: "Außen",
-      doppelhalter: false,
-      id: "op_16",
+      doppelhalter: true,
     },
     {
+      id: "op_17",
       code: "L0207",
       title: "A– Gew – Entgraten / Fräsen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      id: "op_17",
     },
     {
+      id: "op_18",
       code: "L2105",
       title: "A– Bohrungen Ø5 Bürsten",
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      id: "op_18",
     },
     {
-      code: "L2113",
+      id: "op_19",
+      code: "L2115",
       title: "A– Gew. Gang Wegfräsen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: true,
-      id: "op_19",
     },
     {
+      id: "op_20",
       code: "L2108",
       title: "A– Gew. Gang Wegfräsen",
       spindle: "SP3",
       category: "Außen",
       doppelhalter: true,
-      id: "op_20",
     },
     {
+      id: "op_21",
       code: "L2104",
       title: "I– Bohren Ø12.5",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      id: "op_21",
     },
     {
+      id: "op_22",
       code: "L2106",
-      title: "A– Gew M40 × 2",
+      title: "A_Gewinde_M40×2",
       spindle: "SP4",
       category: "Außen",
-      doppelhalter: false,
-      id: "op_22",
+      doppelhalter: true,
     },
     {
+      id: "op_23",
       code: "L1101",
       title: "Außen Schruppen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      id: "op_23",
     },
     {
+      id: "op_24",
       code: "L2101",
       title: "Einstechen",
       spindle: "SP3",
       category: "Radial",
       doppelhalter: false,
-      id: "op_24",
     },
     {
       id: "op_25",
@@ -520,9 +529,34 @@ const DEFAULT_DATA = {
       category: "Außen",
       doppelhalter: false,
     },
+    {
+      id: "op_36",
+      code: "L1111",
+      title: "I-Nut 2xØ17.9 Vorstechen",
+      spindle: "SP4",
+      category: "Innen",
+      doppelhalter: false,
+    },
+    {
+      id: "op_37",
+      code: "L2114",
+      title: "Senker_Lochkreis_Ø5_Entgraten",
+      spindle: "SP4",
+      category: "Radial",
+      doppelhalter: false,
+    },
+    {
+      id: "op_38",
+      code: "L1116",
+      title: "N_O_P",
+      spindle: "SP4",
+      category: "Außen",
+      doppelhalter: false,
+    },
   ],
-  nextOpId: 36,
+  nextOpId: 39,
   activeCategory: "Außen",
+  spindleFilter: "SP4",
 };
 
 // ---------- MODAL -------------------------------------------------------
@@ -559,7 +593,7 @@ function openInfoModal() {
     <p class="text-muted">
       • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie, Doppelhalter).<br>
       • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
-      • Klick auf leeren Slot öffnet die Auswahlliste der Operationen.<br>
+      • Klick auf leeren Slot öffnet die Auswahlliste der Operationen inkl. Filter.<br>
       • Programmplan-Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
       • L-Code im Plan richtet sich nach Kanal und Zeile (L11xx / L21xx).<br>
       • SP3 = blau, SP4 = grün.
@@ -1046,7 +1080,9 @@ function onSlotDrop(e) {
 }
 
 function initAddSlotButton() {
-  $("#addSlotBtn").addEventListener("click", () => {
+  const btn = $("#addSlotBtn");
+  if (!btn) return;
+  btn.addEventListener("click", () => {
     const kanalSlots = state.slots[state.currentKanal];
     kanalSlots.push(null);
     renderSlots();
@@ -1079,7 +1115,7 @@ function renderLibraryFilters() {
   const container = $("#libraryFilters");
   container.innerHTML = "";
 
-  // Row 1: категории
+  // Row 1: Kategorien
   const row1 = document.createElement("div");
   row1.className = "library-filters-row";
 
@@ -1221,26 +1257,130 @@ function initAddOperationButton() {
   btn.addEventListener("click", () => openOperationEditor(null));
 }
 
+// ---------- SLOT PICKER FILTERS -----------------------------------------
+
+function getSlotPickerFilteredOps() {
+  let ops = state.library;
+
+  if (state.slotPickerCategory !== "Alle") {
+    ops = ops.filter((op) => op.category === state.slotPickerCategory);
+  }
+
+  if (state.slotPickerSpindle === "SP3") {
+    ops = ops.filter((op) => op.spindle === "SP3");
+  } else if (state.slotPickerSpindle === "SP4") {
+    ops = ops.filter((op) => op.spindle === "SP4");
+  }
+
+  return ops;
+}
+
 // ---------- SLOT OPERATION PICKER (модалка для пустых слотов) -----------
 
 function openSlotOperationPicker(slotIndex) {
+  state.slotPickerCategory = "Alle";
+  state.slotPickerSpindle = "ALL";
+
   openModalBase({
     title: "Operation auswählen",
     description:
-      "Wähle eine Operation aus der gefilterten Liste. Kategorie- und Spindel-Filter aus der Library gelten hier ebenfalls.",
+      "Wähle eine Operation aus der Liste. Eigene Kategorie- und Spindel-Filter nur für diesen Slot.",
   });
 
   const body = $("#modalBody");
 
-  const ops = getFilteredOperations();
-  if (!ops.length) {
-    const p = document.createElement("p");
-    p.className = "text-muted";
-    p.textContent = "Keine Operationen für aktuelle Filter.";
-    body.appendChild(p);
-  } else {
-    const list = document.createElement("div");
-    list.className = "slot-picker-list";
+  const filtersContainer = document.createElement("div");
+  filtersContainer.className = "library-filters";
+
+  // Row 1: Kategorie
+  const row1 = document.createElement("div");
+  row1.className = "library-filters-row";
+
+  const cats = ["Alle", "Außen", "Innen", "Radial", "Axial"];
+  cats.forEach((cat) => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className =
+      "filter-pill" + (state.slotPickerCategory === cat ? " active" : "");
+    pill.textContent =
+      cat === "Alle" ? "Alle Kategorien" : `${cat} Bearbeitung`;
+    pill.addEventListener("click", () => {
+      state.slotPickerCategory = cat;
+      renderOpsList();
+      updatePickerFilterStyles();
+    });
+    pill.dataset.slotPickerCat = cat;
+    row1.appendChild(pill);
+  });
+
+  filtersContainer.appendChild(row1);
+
+  // Row 2: Spindel
+  const row2 = document.createElement("div");
+  row2.className = "library-spindle-row";
+
+  const label = document.createElement("span");
+  label.className = "filter-label";
+  label.textContent = "Spindel:";
+  row2.appendChild(label);
+
+  const spindleOptions = [
+    { value: "ALL", label: "Alle" },
+    { value: "SP4", label: "SP4 (grün)" },
+    { value: "SP3", label: "SP3 (blau)" },
+  ];
+
+  spindleOptions.forEach((opt) => {
+    const pill = document.createElement("button");
+    pill.type = "button";
+    pill.className =
+      "filter-pill" +
+      (state.slotPickerSpindle === opt.value ? " active" : "");
+    pill.textContent = opt.label;
+    pill.dataset.slotPickerSpindle = opt.value;
+    pill.addEventListener("click", () => {
+      state.slotPickerSpindle = opt.value;
+      renderOpsList();
+      updatePickerFilterStyles();
+    });
+    row2.appendChild(pill);
+  });
+
+  filtersContainer.appendChild(row2);
+
+  const list = document.createElement("div");
+  list.className = "slot-picker-list";
+
+  body.append(filtersContainer, list);
+
+  function updatePickerFilterStyles() {
+    // Kategorie
+    filtersContainer
+      .querySelectorAll("[data-slot-picker-cat]")
+      .forEach((el) => {
+        const cat = el.dataset.slotPickerCat;
+        el.classList.toggle("active", state.slotPickerCategory === cat);
+      });
+    // Spindel
+    filtersContainer
+      .querySelectorAll("[data-slot-picker-spindle]")
+      .forEach((el) => {
+        const v = el.dataset.slotPickerSpindle;
+        el.classList.toggle("active", state.slotPickerSpindle === v);
+      });
+  }
+
+  function renderOpsList() {
+    list.innerHTML = "";
+
+    const ops = getSlotPickerFilteredOps();
+    if (!ops.length) {
+      const p = document.createElement("p");
+      p.className = "text-muted";
+      p.textContent = "Keine Operationen für aktuelle Filter.";
+      list.appendChild(p);
+      return;
+    }
 
     ops.forEach((op) => {
       const btn = document.createElement("button");
@@ -1291,9 +1431,10 @@ function openSlotOperationPicker(slotIndex) {
 
       list.appendChild(btn);
     });
-
-    body.appendChild(list);
   }
+
+  updatePickerFilterStyles();
+  renderOpsList();
 
   const footer = $("#modalFooter");
   const cancelBtn = document.createElement("button");
