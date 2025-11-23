@@ -24,12 +24,36 @@ function getOperationById(id) {
   return state.library.find((op) => op.id === id) || null;
 }
 
+// Базовый формат без динамики (для Library, редактора и т.п.)
 function formatOperationLabel(op) {
   if (!op) return "";
   const code = (op.code || "").trim();
   const title = (op.title || "").trim();
   if (code && title) return `${code} – ${title}`;
   return code || title;
+}
+
+// ---------- ДИНАМИЧЕСКИЙ L-КОД -----------------------------------------
+
+function getDynamicLCode(kanal, rowNumber) {
+  const n = Math.max(1, rowNumber | 0);
+  const suffix = String(n).padStart(2, "0");
+  let prefix;
+  if (kanal === "1") prefix = "L11";
+  else if (kanal === "2") prefix = "L21";
+  else return null;
+  return prefix + suffix;
+}
+
+function formatOperationLabelDynamic(op, kanal, rowNumber) {
+  if (!op) return "";
+  const dyn = getDynamicLCode(kanal, rowNumber);
+  const title = (op.title || "").trim();
+  const fallback = (op.code || "").trim();
+  const name = title || fallback;
+  if (dyn && name) return `${dyn} – ${name}`;
+  if (dyn) return dyn;
+  return formatOperationLabel(op);
 }
 
 // ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
@@ -537,6 +561,7 @@ function openInfoModal() {
       • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
       • Klick auf leeren Slot öffnet die Auswahlliste der Operationen.<br>
       • Programmplan-Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
+      • L-Code im Plan richtet sich nach Kanal und Zeile (L11xx / L21xx).<br>
       • SP3 = blau, SP4 = grün.
     </p>
   `;
@@ -560,7 +585,7 @@ function openOperationEditor(opId = null) {
 
   openModalBase({
     title: isEdit ? "Operation bearbeiten" : "Neue Operation",
-    description: "L-Code, Name, Spindel, Kategorie und Doppelhalter.",
+    description: "L-Code (Basis), Name, Spindel, Kategorie und Doppelhalter.",
   });
 
   const body = $("#modalBody");
@@ -573,11 +598,11 @@ function openOperationEditor(opId = null) {
   codeGroup.className = "form-group form-group--code";
   const codeLabel = document.createElement("div");
   codeLabel.className = "form-label";
-  codeLabel.textContent = "L-Code";
+  codeLabel.textContent = "L-Code (Basis)";
   const codeInput = document.createElement("input");
   codeInput.type = "text";
   codeInput.className = "field-input";
-  codeInput.placeholder = "L2101";
+  codeInput.placeholder = "L1101";
   codeInput.value = existing ? existing.code || "" : "";
   codeGroup.append(codeLabel, codeInput);
 
@@ -790,7 +815,7 @@ function initModalBaseEvents() {
   }
 }
 
-// ---------- KANАЛ SWITCHER ----------------------------------------------
+// ---------- KANAL SWITCHER ----------------------------------------------
 
 function initKanalSwitcher() {
   const hint = $("#kanalHint");
@@ -827,7 +852,7 @@ function initKanalSwitcher() {
   updateHint();
 }
 
-// ---------- SLOTS (drag from library + перестановка слотов) -------------
+// ---------- SLOTS (drag + picker + перестановка) ------------------------
 
 function ensureSlotCount(kanal, count) {
   const kanalSlots = state.slots[kanal];
@@ -844,6 +869,7 @@ function renderSlots() {
   const rowCount = Math.max(MIN_SLOTS, kanalSlots.length);
 
   for (let i = 0; i < rowCount; i++) {
+    const rowNumber = i + 1;
     const container = document.createElement("div");
     container.className = "slot-row";
     container.dataset.index = String(i);
@@ -855,7 +881,7 @@ function renderSlots() {
 
     const idx = document.createElement("div");
     idx.className = "slot-index";
-    idx.textContent = i + 1;
+    idx.textContent = rowNumber;
 
     const main = document.createElement("div");
     main.className = "slot-main";
@@ -875,7 +901,11 @@ function renderSlots() {
 
       const title = document.createElement("div");
       title.className = "slot-title";
-      title.textContent = formatOperationLabel(op);
+      title.textContent = formatOperationLabelDynamic(
+        op,
+        state.currentKanal,
+        rowNumber
+      );
       main.appendChild(title);
 
       const meta = document.createElement("div");
@@ -916,7 +946,6 @@ function renderSlots() {
         "Operation hier ablegen (Drag & Drop oder Klick)";
       main.appendChild(placeholder);
 
-      // клик по пустому слоту → выбор операции
       container.addEventListener("click", () => {
         openSlotOperationPicker(i);
       });
@@ -940,7 +969,6 @@ function renderSlots() {
       touchState();
     });
 
-    // чтобы кнопка не воровала drop/dnd
     clearBtn.addEventListener("dragover", (e) => e.stopPropagation());
     clearBtn.addEventListener("drop", (e) => e.stopPropagation());
 
@@ -1110,7 +1138,7 @@ function renderLibraryList() {
   const list = $("#libraryList");
   list.innerHTML = "";
 
-  let ops = getFilteredOperations();
+  const ops = getFilteredOperations();
 
   if (!ops.length) {
     const empty = document.createElement("div");
@@ -1138,6 +1166,7 @@ function renderLibraryList() {
 
     const title = document.createElement("div");
     title.className = "op-title";
+    // В библиотеке показываем базовый код
     title.textContent = formatOperationLabel(op);
 
     const footer = document.createElement("div");
@@ -1295,7 +1324,7 @@ function renderPlan() {
   // Kanal 1: сперва Spindel 4, потом Spindel 3
   html += '<th class="sp4-head">Spindel 4</th>';
   html += '<th class="sp3-head">Spindel 3</th>';
-  // Kanal 2: как было — Sp3, Sp4, но с жирной границей перед Sp3
+  // Kanal 2: Sp3, Sp4 с жирной границей перед Sp3
   html += '<th class="sp3-head kanal-divider">Spindel 3</th>';
   html += '<th class="sp4-head">Spindel 4</th>';
   html += "</tr>";
@@ -1303,13 +1332,18 @@ function renderPlan() {
   html += "<tbody>";
 
   for (let i = 0; i < rowCount; i++) {
+    const rowNumber = i + 1;
     const op1Id = slots1[i] ?? null;
     const op2Id = slots2[i] ?? null;
     const op1 = op1Id ? getOperationById(op1Id) : null;
     const op2 = op2Id ? getOperationById(op2Id) : null;
 
-    const label1 = formatOperationLabel(op1);
-    const label2 = formatOperationLabel(op2);
+    const label1 = op1
+      ? formatOperationLabelDynamic(op1, "1", rowNumber)
+      : "";
+    const label2 = op2
+      ? formatOperationLabelDynamic(op2, "2", rowNumber)
+      : "";
 
     const c1sp3 = op1 && op1.spindle === "SP3" ? label1 : "";
     const c1sp4 = op1 && op1.spindle === "SP4" ? label1 : "";
@@ -1317,7 +1351,7 @@ function renderPlan() {
     const c2sp4 = op2 && op2.spindle === "SP4" ? label2 : "";
 
     html += "<tr>";
-    html += `<td class="plan-row-index">${i + 1}</td>`;
+    html += `<td class="plan-row-index">${rowNumber}</td>`;
     // Kanal 1: Sp4, Sp3
     html += `<td class="plan-cell">${c1sp4}</td>`;
     html += `<td class="plan-cell">${c1sp3}</td>`;
@@ -1344,7 +1378,6 @@ function initExportButton() {
 function init() {
   const loaded = loadFromLocal();
   if (!loaded) {
-    // если локального состояния нет — берём твой JSON как дефолт
     applyLoadedState(DEFAULT_DATA);
     touchState();
   }
