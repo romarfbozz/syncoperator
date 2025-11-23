@@ -21,34 +21,14 @@ function getOperationById(id) {
   return state.library.find((op) => op.id === id) || null;
 }
 
-// 5 демо-операций
+// 5 демо-операций + демо-раскладка
 function createDefaultLibrary() {
   const defs = [
-    {
-      name: "L1101 – Außen Schruppen",
-      spindle: "SP4",
-      category: "Außen",
-    },
-    {
-      name: "L1102 – Innen Schlichten",
-      spindle: "SP3",
-      category: "Innen",
-    },
-    {
-      name: "L2101 – Einstechen",
-      spindle: "SP3",
-      category: "Radial",
-    },
-    {
-      name: "L2104 – Scheibenfräsen",
-      spindle: "SP4",
-      category: "Axial",
-    },
-    {
-      name: "Probe – Außendurchmesser",
-      spindle: "SP3",
-      category: "Radial",
-    },
+    { name: "L1101 – Außen Schruppen", spindle: "SP4", category: "Außen" },
+    { name: "L1102 – Innen Schlichten", spindle: "SP3", category: "Innen" },
+    { name: "L2101 – Einstechen", spindle: "SP3", category: "Radial" },
+    { name: "L2104 – Scheibenfräsen", spindle: "SP4", category: "Axial" },
+    { name: "Probe – Außendurchmesser", spindle: "SP3", category: "Radial" },
   ];
 
   state.library = defs.map((def) => ({
@@ -56,8 +36,8 @@ function createDefaultLibrary() {
     id: "op_" + state.nextOpId++,
   }));
 
-  // Демо-раскладка в слотах
   const ids = state.library.map((o) => o.id);
+
   // Kanal 1
   state.slots["1"][0] = ids[0] || null;
   state.slots["1"][1] = ids[1] || null;
@@ -93,14 +73,15 @@ function openInfoModal() {
   openModalBase({
     title: "SyncOperator – Info",
     description:
-      "Links Slots pro Kanal, rechts Operation Library. Unten wird automatisch der Plan pro Kanal/Spindel aufgebaut.",
+      "Links Slots pro Kanal, rechts Operation Library. Unten Plan pro Kanal/Spindel.",
   });
 
   const body = $("#modalBody");
   body.innerHTML = `
     <p class="text-muted">
       • Klick auf eine Operation öffnet den Editor (Name, Spindel, Kategorie).<br>
-      • Drag &amp; Drop auf einen Slot belegt diesen.<br>
+      • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
+      • Klick auf belegten Slot öffnet ebenfalls den Editor.<br>
       • SP3 = blau, SP4 = grün.
     </p>
   `;
@@ -114,13 +95,16 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-function openEditOperationModal(opId) {
-  const op = getOperationById(opId);
-  if (!op) return;
+// единый редактор: create + edit
+function openOperationEditor(opId = null) {
+  const isEdit = !!opId;
+  const existing = isEdit ? getOperationById(opId) : null;
+
+  if (isEdit && !existing) return;
 
   openModalBase({
-    title: "Operation bearbeiten",
-    description: "Name, Spindel und Kategorie anpassen.",
+    title: isEdit ? "Operation bearbeiten" : "Neue Operation",
+    description: "Name, Spindel und Kategorie einstellen.",
   });
 
   const body = $("#modalBody");
@@ -135,7 +119,7 @@ function openEditOperationModal(opId) {
   const nameInput = document.createElement("input");
   nameInput.type = "text";
   nameInput.className = "field-input";
-  nameInput.value = op.name;
+  nameInput.value = existing ? existing.name : "";
   nameGroup.append(nameLabel, nameInput);
 
   // Spindle
@@ -151,7 +135,7 @@ function openEditOperationModal(opId) {
     <option value="SP4">SP4 (grün)</option>
     <option value="SP3">SP3 (blau)</option>
   `;
-  spindleSelect.value = op.spindle;
+  spindleSelect.value = existing ? existing.spindle : "SP4";
   spindleGroup.append(spindleLabel, spindleSelect);
 
   // Category
@@ -169,7 +153,7 @@ function openEditOperationModal(opId) {
     <option value="Radial">Radial Bearbeitung</option>
     <option value="Axial">Axial</option>
   `;
-  catSelect.value = op.category;
+  catSelect.value = existing ? existing.category : "Außen";
   catGroup.append(catLabel, catSelect);
 
   body.append(nameGroup, spindleGroup, catGroup);
@@ -185,7 +169,8 @@ function openEditOperationModal(opId) {
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
   saveBtn.className = "btn-primary";
-  saveBtn.textContent = "Speichern";
+  saveBtn.textContent = isEdit ? "Speichern" : "Anlegen";
+
   saveBtn.addEventListener("click", () => {
     const name = nameInput.value.trim();
     if (!name) {
@@ -193,9 +178,22 @@ function openEditOperationModal(opId) {
       return;
     }
 
-    op.name = name;
-    op.spindle = spindleSelect.value;
-    op.category = catSelect.value;
+    const spindle = spindleSelect.value;
+    const category = catSelect.value;
+
+    if (isEdit) {
+      existing.name = name;
+      existing.spindle = spindle;
+      existing.category = category;
+    } else {
+      const newOp = {
+        id: "op_" + state.nextOpId++,
+        name,
+        spindle,
+        category,
+      };
+      state.library.push(newOp);
+    }
 
     closeModal();
     renderLibraryList();
@@ -235,7 +233,8 @@ function openDeleteOperationModal(opId) {
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
   deleteBtn.className = "btn-outline btn-outline-danger";
-  deleteBtn.innerHTML = '<span class="btn-icon">🗑</span><span>Löschen</span>';
+  deleteBtn.innerHTML =
+    '<span class="btn-icon"><svg class="icon-svg"><use href="#icon-trash"></use></svg></span><span>Löschen</span>';
   deleteBtn.addEventListener("click", () => {
     // Remove from slots
     ["1", "2"].forEach((kanal) => {
@@ -342,6 +341,7 @@ function renderSlots() {
     const container = document.createElement("div");
     container.className = "slot-row";
     container.dataset.index = String(i);
+
     container.addEventListener("dragover", onSlotDragOver);
     container.addEventListener("dragleave", onSlotDragLeave);
     container.addEventListener("drop", onSlotDrop);
@@ -382,6 +382,13 @@ function renderSlots() {
 
       meta.append(label, badgeSp, badgeCat);
       main.appendChild(meta);
+
+      // Клик по заполненному слоту → открыть редактор
+      container.addEventListener("click", (e) => {
+        // не триггерить при клике по кнопке удаления
+        if (e.target.closest(".slot-actions")) return;
+        openOperationEditor(opId);
+      });
     } else {
       const placeholder = document.createElement("div");
       placeholder.className = "slot-placeholder";
@@ -397,8 +404,11 @@ function renderSlots() {
     clearBtn.type = "button";
     clearBtn.className = "icon-button";
     clearBtn.title = "Slot leeren";
-    clearBtn.innerHTML = '<span class="btn-icon">🗑</span>';
-    clearBtn.addEventListener("click", () => {
+    clearBtn.innerHTML =
+      '<svg class="icon-svg"><use href="#icon-trash"></use></svg>';
+
+    clearBtn.addEventListener("click", (e) => {
+      e.stopPropagation();
       kanalSlots[i] = null;
       renderSlots();
       renderPlan();
@@ -489,15 +499,15 @@ function renderLibraryList() {
     card.dataset.opId = op.id;
     card.setAttribute("draggable", "true");
 
-    // Drag & Drop – только перенос в слоты
+    // Drag & Drop – перенос в слоты
     card.addEventListener("dragstart", (e) => {
       e.dataTransfer.effectAllowed = "move";
       e.dataTransfer.setData("text/plain", op.id);
     });
 
-    // Клик по карточке – открыть модалку-редактор (как ты просил)
+    // Клик по карточке – открыть редактор
     card.addEventListener("click", () => {
-      openEditOperationModal(op.id);
+      openOperationEditor(op.id);
     });
 
     const title = document.createElement("div");
@@ -527,7 +537,9 @@ function renderLibraryList() {
     delBtn.type = "button";
     delBtn.className = "icon-button";
     delBtn.title = "Löschen";
-    delBtn.innerHTML = '<span class="btn-icon">🗑</span>';
+    delBtn.innerHTML =
+      '<svg class="icon-svg"><use href="#icon-trash"></use></svg>';
+
     delBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       openDeleteOperationModal(op.id);
@@ -541,36 +553,10 @@ function renderLibraryList() {
   });
 }
 
-function initAddOperationForm() {
-  const form = $("#addOpForm");
-  form.addEventListener("submit", (e) => {
-    e.preventDefault();
-    const nameInput = $("#opNameInput");
-    const spindleSelect = $("#opSpindleSelect");
-    const categorySelect = $("#opCategorySelect");
-
-    const name = nameInput.value.trim();
-    if (!name) {
-      nameInput.focus();
-      return;
-    }
-
-    const spindle = spindleSelect.value;
-    const category = categorySelect.value;
-
-    state.library.push({
-      id: "op_" + state.nextOpId++,
-      name,
-      spindle,
-      category,
-    });
-
-    form.reset();
-    spindleSelect.value = "SP4";
-    categorySelect.value = "Außen";
-
-    renderLibraryList();
-  });
+function initAddOperationButton() {
+  const btn = $("#addOpButton");
+  if (!btn) return;
+  btn.addEventListener("click", () => openOperationEditor(null));
 }
 
 // ---------- PLAN --------------------------------------------------------
@@ -628,7 +614,7 @@ function init() {
   createDefaultLibrary();
   initKanalSwitcher();
   initAddSlotButton();
-  initAddOperationForm();
+  initAddOperationButton();
   initModalBaseEvents();
   renderSlots();
   renderLibraryFilters();
