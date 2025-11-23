@@ -1503,7 +1503,7 @@ function renderPlan() {
     // Kanal 2: Sp3 (с жирным разделителем), Sp4
     html += `<td class="plan-cell kanal-divider">${c2sp3}</td>`;
     html += `<td class="plan-cell">${c2sp4}</td>`;
-    html += "</tr>`;
+    html += "</tr>";
   }
 
   html += "</tbody>";
