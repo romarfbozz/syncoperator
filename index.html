@@ -28,9 +28,11 @@
     <header class="app-header">
       <div class="app-header-left">
         <div class="app-logo-mark">
-          <div class="app-logo-inner">
-            <span class="app-logo-main">C</span>
-            <span class="app-logo-sub">T</span>
+          <div class="app-logo-ring">
+            <div class="app-logo-core">
+              <span class="app-logo-acronym">CT</span>
+              <span class="app-logo-module">Sync</span>
+            </div>
           </div>
         </div>
         <div class="app-title-block">
@@ -122,11 +124,28 @@
             Kanal 1/2 · Spindel 3/4 · Reihenfolge 1…N
           </div>
         </div>
-        <button id="exportPdfBtn" type="button" class="btn-outline btn-small">
-          <span class="btn-icon">⟶</span>
-          <span>Als PDF exportieren</span>
-        </button>
+        <div class="section-actions">
+          <button id="importJsonBtn" type="button" class="btn-outline btn-small">
+            <span class="btn-icon">⇧</span>
+            <span>JSON Import</span>
+          </button>
+          <button id="exportJsonBtn" type="button" class="btn-outline btn-small">
+            <span class="btn-icon">⇩</span>
+            <span>JSON Export</span>
+          </button>
+          <button id="exportPdfBtn" type="button" class="btn-outline btn-small">
+            <span class="btn-icon">⟶</span>
+            <span>Als PDF</span>
+          </button>
+        </div>
       </div>
+
+      <input
+        type="file"
+        id="importFileInput"
+        accept="application/json"
+        style="display:none"
+      />
 
       <div class="plan-table-wrapper">
         <table class="plan-table" id="planTable"></table>
