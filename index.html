@@ -27,12 +27,21 @@
     <!-- HEADER -->
     <header class="app-header">
       <div class="app-header-left">
-        <div class="app-title-row">
-          <span class="status-dot"></span>
-          <div>
-            <div class="app-title">SyncOperator</div>
-            <div class="app-subtitle">Kanal- und Spindelplanung</div>
+        <div class="app-logo-mark">
+          <div class="app-logo-inner">
+            <span class="app-logo-main">S</span>
+            <span class="app-logo-sub">O</span>
           </div>
+        </div>
+        <div class="app-title-block">
+          <div class="app-title-row">
+            <div class="app-title">SyncOperator</div>
+            <div class="status-pill">
+              <span class="status-dot"></span>
+              <span class="status-text">Live</span>
+            </div>
+          </div>
+          <div class="app-subtitle">Channel Workbench · Kanal / Spindel Planung</div>
         </div>
       </div>
       <div class="app-header-right">
@@ -118,6 +127,10 @@
             Kanal 1/2 · Spindel 3/4 · Reihenfolge 1…N
           </div>
         </div>
+        <button id="exportPdfBtn" type="button" class="btn-outline btn-small">
+          <span class="btn-icon">⟶</span>
+          <span>Als PDF exportieren</span>
+        </button>
       </div>
 
       <div class="plan-table-wrapper">
