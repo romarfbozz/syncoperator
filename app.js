@@ -107,7 +107,6 @@ function applyLoadedState(raw) {
     "2": Array.isArray(slots["2"]) ? [...slots["2"]] : Array(MIN_SLOTS).fill(null),
   };
 
-  // гарантируем минимум слотов
   ["1", "2"].forEach((k) => {
     while (newSlots[k].length < MIN_SLOTS) {
       newSlots[k].push(null);
@@ -141,9 +140,7 @@ function saveToLocal() {
       data: getSerializableState(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 }
 
 function loadFromLocal() {
@@ -216,16 +213,14 @@ function initJsonExportImport() {
           applyLibraryCollapsedState();
           renderPlan();
           updatePlanViewSwitcherUI();
-        } catch (_) {
-          // ignore
-        }
+        } catch (_) {}
       };
       reader.readAsText(file);
     });
   }
 }
 
-// ---------- DEFAULT DATA (как раньше) -----------------------------------
+// ---------- DEFAULT DATA ------------------------------------------------
 
 const DEFAULT_DATA = {
   currentKanal: "2",
@@ -631,8 +626,6 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-// единый редактор: create + edit, включая Werkzeug
-
 function openOperationEditor(opId = null) {
   const isEdit = !!opId;
   const existing = isEdit ? getOperationById(opId) : null;
@@ -949,7 +942,7 @@ function initKanalSwitcher() {
   updateHint();
 }
 
-// ---------- SLOTS (drag + picker + перестановка) ------------------------
+// ---------- SLOTS -------------------------------------------------------
 
 function ensureSlotCount(kanal, count) {
   const kanalSlots = state.slots[kanal];
@@ -1008,7 +1001,6 @@ function renderSlots() {
       const meta = document.createElement("div");
       meta.className = "slot-meta";
 
-      // Название инструмента как бейдж
       const toolName = (op.toolName || "").trim();
       if (toolName) {
         const toolLabel = document.createElement("span");
@@ -1162,7 +1154,7 @@ function initAddSlotButton() {
   });
 }
 
-// ---------- LIBRARY FILTER HELPERS --------------------------------------
+// ---------- LIBRARY FILTERS & LIST --------------------------------------
 
 function getFilteredOperations() {
   let ops = state.library;
@@ -1180,18 +1172,12 @@ function getFilteredOperations() {
   return ops;
 }
 
-// ---------- LIBRARY ------------------------------------------------------
-
 function renderLibraryFilters() {
   const container = $("#libraryFilters");
   container.innerHTML = "";
 
-  if (state.libraryCollapsed) {
-    // если свернуто — фильтры не рисуем
-    return;
-  }
+  if (state.libraryCollapsed) return;
 
-  // Row 1: Kategorien
   const row1 = document.createElement("div");
   row1.className = "library-filters-row";
 
@@ -1213,7 +1199,6 @@ function renderLibraryFilters() {
 
   container.appendChild(row1);
 
-  // Row 2: Spindel Filter
   const row2 = document.createElement("div");
   row2.className = "library-spindle-row";
 
@@ -1250,10 +1235,7 @@ function renderLibraryList() {
   const list = $("#libraryList");
   list.innerHTML = "";
 
-  if (state.libraryCollapsed) {
-    // список скрыт — выводим пусто
-    return;
-  }
+  if (state.libraryCollapsed) return;
 
   const ops = getFilteredOperations();
 
@@ -1283,7 +1265,6 @@ function renderLibraryList() {
 
     const title = document.createElement("div");
     title.className = "op-title";
-    // В библиотеке: Name L-Code
     title.textContent = formatOperationLabel(op);
 
     const footer = document.createElement("div");
@@ -1310,7 +1291,6 @@ function renderLibraryList() {
       meta.appendChild(badgeD);
     }
 
-    // Бейдж Txx, если указан Werkzeug-Nr.
     const toolNo = (op.toolNo || "").trim();
     if (toolNo) {
       const badgeT = document.createElement("span");
@@ -1320,7 +1300,6 @@ function renderLibraryList() {
     }
 
     const btnWrap = document.createElement("div");
-
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.className = "icon-button";
@@ -1347,7 +1326,7 @@ function initAddOperationButton() {
   btn.addEventListener("click", () => openOperationEditor(null));
 }
 
-// ---------- СВОРАТЫВАЕМ OPERATION LIBRARY -------------------------------
+// ---------- COLLAPSE OPERATION LIBRARY ---------------------------------
 
 function applyLibraryCollapsedState() {
   const filters = $("#libraryFilters");
@@ -1396,9 +1375,7 @@ function initLibraryCollapse() {
     e.stopPropagation();
     state.libraryCollapsed = !state.libraryCollapsed;
     applyLibraryCollapsedState();
-    // фильтры/список уже перерисованы с учётом collapsed
     if (!state.libraryCollapsed) {
-      // при разворачивании перерисуем содержимое
       renderLibraryFilters();
       renderLibraryList();
     }
@@ -1410,7 +1387,7 @@ function initLibraryCollapse() {
   applyLibraryCollapsedState();
 }
 
-// ---------- SLOT PICKER FILTERS -----------------------------------------
+// ---------- SLOT PICKER (модалка по клику на пустой слот) ---------------
 
 function getSlotPickerFilteredOps() {
   let ops = state.library;
@@ -1428,8 +1405,6 @@ function getSlotPickerFilteredOps() {
   return ops;
 }
 
-// ---------- SLOT OPERATION PICKER (модалка для пустых слотов) -----------
-
 function openSlotOperationPicker(slotIndex) {
   state.slotPickerCategory = "Alle";
   state.slotPickerSpindle = "ALL";
@@ -1445,7 +1420,6 @@ function openSlotOperationPicker(slotIndex) {
   const filtersContainer = document.createElement("div");
   filtersContainer.className = "library-filters";
 
-  // Row 1: Kategorie
   const row1 = document.createElement("div");
   row1.className = "library-filters-row";
 
@@ -1468,7 +1442,6 @@ function openSlotOperationPicker(slotIndex) {
 
   filtersContainer.appendChild(row1);
 
-  // Row 2: Spindel
   const row2 = document.createElement("div");
   row2.className = "library-spindle-row";
 
@@ -1507,14 +1480,12 @@ function openSlotOperationPicker(slotIndex) {
   body.append(filtersContainer, list);
 
   function updatePickerFilterStyles() {
-    // Kategorie
     filtersContainer
       .querySelectorAll("[data-slot-picker-cat]")
       .forEach((el) => {
         const cat = el.dataset.slotPickerCat;
         el.classList.toggle("active", state.slotPickerCategory === cat);
       });
-    // Spindel
     filtersContainer
       .querySelectorAll("[data-slot-picker-spindle]")
       .forEach((el) => {
@@ -1543,7 +1514,6 @@ function openSlotOperationPicker(slotIndex) {
 
       const title = document.createElement("div");
       title.className = "op-title";
-      // Picker: Name L-Code
       title.textContent = formatOperationLabel(op);
 
       const footer = document.createElement("div");
@@ -1608,7 +1578,7 @@ function openSlotOperationPicker(slotIndex) {
   footer.appendChild(cancelBtn);
 }
 
-// ---------- PLAN VIEW SWITCHER (Programmplan / Einrichteblatt) ---------
+// ---------- PLAN VIEW SWITCHER -----------------------------------------
 
 function initPlanViewSwitcher() {
   const actions = document.querySelector(".plan-card .section-actions");
@@ -1630,8 +1600,6 @@ function initPlanViewSwitcher() {
   btnEin.textContent = "Einrichteblatt";
 
   container.append(btnPlan, btnEin);
-
-  // вставляем слева от кнопок PDF/JSON
   actions.prepend(container);
 
   container.addEventListener("click", (e) => {
@@ -1657,10 +1625,9 @@ function updatePlanViewSwitcherUI() {
   });
 }
 
-// ---------- PLAN DATA HELPERS -------------------------------------------
+// ---------- EINRICHTE-DATA (общее map по T) -----------------------------
 
 function buildEinrichteData() {
-  // Словарь по Werkzeug-Nr.
   const map = {};
 
   function addFromKanal(kanal, isOben) {
@@ -1673,7 +1640,7 @@ function buildEinrichteData() {
 
       const toolNo = (op.toolNo || "").trim();
       const toolName = (op.toolName || "").trim();
-      if (!toolNo) continue; // без номера не попадает в Einrichteblatt
+      if (!toolNo) continue;
 
       if (!map[toolNo]) {
         map[toolNo] = {
@@ -1692,13 +1659,11 @@ function buildEinrichteData() {
     }
   }
 
-  // Kanal 1 = Revolver oben, Kanal 2 = unten
-  addFromKanal("1", true);
-  addFromKanal("2", false);
+  addFromKanal("1", true);  // Revolver oben (Kanal 1)
+  addFromKanal("2", false); // Revolver unten (Kanal 2)
 
   const arr = Object.values(map);
 
-  // сортируем по числу после 'T', если возможно
   arr.sort((a, b) => {
     const ta = a.toolNo || "";
     const tb = b.toolNo || "";
@@ -1713,7 +1678,7 @@ function buildEinrichteData() {
   return arr;
 }
 
-// ---------- PLAN (inkl. PDF via Print + Einrichteblatt) -----------------
+// ---------- PLAN (Programmplan + Einrichteblatt) ------------------------
 
 function renderPlan() {
   const table = $("#planTable");
@@ -1740,10 +1705,8 @@ function renderProgrammplan(table) {
   html += "</tr>";
   html += "<tr>";
   html += '<th class="plan-row-index"></th>';
-  // Kanal 1: сперва Spindel 4, потом Spindel 3
   html += '<th class="sp4-head">Spindel 4</th>';
   html += '<th class="sp3-head">Spindel 3</th>';
-  // Kanal 2: Sp3, Sp4 с жирной границей перед Sp3
   html += '<th class="sp3-head kanal-divider">Spindel 3</th>';
   html += '<th class="sp4-head">Spindel 4</th>';
   html += "</tr>";
@@ -1771,10 +1734,8 @@ function renderProgrammplan(table) {
 
     html += "<tr>";
     html += `<td class="plan-row-index">${rowNumber}</td>`;
-    // Kanal 1: Sp4, Sp3
     html += `<td class="plan-cell">${c1sp4}</td>`;
     html += `<td class="plan-cell">${c1sp3}</td>`;
-    // Kanal 2: Sp3 (с жирным разделителем), Sp4
     html += `<td class="plan-cell kanal-divider">${c2sp3}</td>`;
     html += `<td class="plan-cell">${c2sp4}</td>`;
     html += "</tr>";
@@ -1784,27 +1745,33 @@ function renderProgrammplan(table) {
   table.innerHTML = html;
 }
 
+// *** ВАЖНО: НОВЫЙ EINRICHTEBLATT С ДВУМЯ T-СТОЛБЦАМИ ***
+
 function renderEinrichteblatt(table) {
   const data = buildEinrichteData();
 
   let html = "";
   html += "<thead>";
   html += "<tr>";
-  html += '<th class="plan-row-index">T</th>';
+  html += '<th class="plan-row-index">T (K1)</th>';
   html += '<th class="sp4-head">Werkzeug · Revolver oben (Kanal 1)</th>';
-  html += '<th class="sp3-head kanal-divider">Werkzeug · Revolver unten (Kanal 2)</th>';
+  html += '<th class="plan-row-index kanal-divider">T (K2)</th>';
+  html += '<th class="sp3-head">Werkzeug · Revolver unten (Kanal 2)</th>';
   html += "</tr>";
   html += "</thead>";
   html += "<tbody>";
 
   if (!data.length) {
-    html += '<tr><td colspan="3" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
+    html += '<tr><td colspan="4" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
   } else {
     data.forEach((row) => {
+      const t1 = row.oben ? row.toolNo : "";
+      const t2 = row.unten ? row.toolNo : "";
       html += "<tr>";
-      html += `<td class="plan-row-index">${row.toolNo || ""}</td>`;
+      html += `<td class="plan-row-index">${t1}</td>`;
       html += `<td class="plan-cell">${row.oben || ""}</td>`;
-      html += `<td class="plan-cell kanal-divider">${row.unten || ""}</td>`;
+      html += `<td class="plan-row-index kanal-divider">${t2}</td>`;
+      html += `<td class="plan-cell">${row.unten || ""}</td>`;
       html += "</tr>";
     });
   }
@@ -1812,6 +1779,8 @@ function renderEinrichteblatt(table) {
   html += "</tbody>";
   table.innerHTML = html;
 }
+
+// ---------- EXPORT PDF --------------------------------------------------
 
 function initExportButton() {
   const btn = $("#exportPdfBtn");
