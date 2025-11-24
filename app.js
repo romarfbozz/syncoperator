@@ -1002,11 +1002,11 @@ function renderSlots() {
       const meta = document.createElement("div");
       meta.className = "slot-meta";
 
-      // Название инструмента вместо "Kanal X"
+      // Название инструмента как бейдж вместо "Kanal X"
       const toolName = (op.toolName || "").trim();
       if (toolName) {
         const toolLabel = document.createElement("span");
-        toolLabel.className = "slot-meta-label";
+        toolLabel.className = "badge badge-tool";
         toolLabel.textContent = toolName;
         meta.appendChild(toolLabel);
       }
@@ -1712,8 +1712,8 @@ function renderEinrichteblatt(table) {
   html += "<thead>";
   html += "<tr>";
   html += '<th class="plan-row-index">T</th>';
-  html += '<th class="th-group">Werkzeug · Revolver oben (Kanal 1)</th>';
-  html += '<th class="th-group kanal-divider">Werkzeug · Revolver unten (Kanal 2)</th>';
+  html += '<th class="sp4-head">Werkzeug · Revolver oben (Kanal 1)</th>';
+  html += '<th class="sp3-head kanal-divider">Werkzeug · Revolver unten (Kanal 2)</th>';
   html += "</tr>";
   html += "</thead>";
   html += "<tbody>";
