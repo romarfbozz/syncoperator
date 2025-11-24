@@ -81,7 +81,7 @@ body {
   gap: 12px;
 }
 
-/* NEW PREMIUM LOGO – CT (light / blue / glass) */
+/* PREMIUM LOGO – CT (light blue glass) */
 
 .app-logo-mark {
   width: 46px;
@@ -146,6 +146,8 @@ body {
   letter-spacing: 0.16em;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
 }
+
+/* rest of header */
 
 .app-title-block {
   display: flex;
@@ -792,6 +794,46 @@ body {
   max-height: 260px;
   overflow: auto;
   margin-top: 4px;
+}
+
+/* PLAN VIEW SWITCHER (Programmplan / Einrichteblatt) */
+
+.plan-view-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px;
+  border-radius: 999px;
+  background: rgba(243, 244, 246, 0.95);
+  border: 1px solid rgba(209, 213, 219, 0.9);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.12);
+}
+
+.plan-view-pill {
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 4px 11px;
+  font-size: 11px;
+  line-height: 1.3;
+  cursor: pointer;
+  color: #4b5563;
+  white-space: nowrap;
+  transition: background var(--transition-fast), color var(--transition-fast),
+    border-color var(--transition-fast), box-shadow var(--transition-fast),
+    transform 0.06s ease;
+}
+
+.plan-view-pill:hover {
+  background: rgba(229, 231, 235, 0.98);
+  border-color: #e5e7eb;
+}
+
+.plan-view-pill.active {
+  background: #111827;
+  color: #f9fafb;
+  border-color: #020617;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.35);
 }
 
 /* PLAN TABLE */
