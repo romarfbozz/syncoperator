@@ -22,6 +22,8 @@ const state = {
   slotPickerSpindle: "ALL",
   // режим нижнего блока
   planViewMode: "PLAN", // PLAN | EINRICHTE
+  // свернуть / развернуть OPERATION LIBRARY
+  libraryCollapsed: false,
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -76,6 +78,7 @@ function getSerializableState() {
     activeCategory: state.activeCategory,
     spindleFilter: state.spindleFilter,
     planViewMode: state.planViewMode,
+    libraryCollapsed: state.libraryCollapsed,
   };
 }
 
@@ -126,6 +129,7 @@ function applyLoadedState(raw) {
     raw.planViewMode === "EINRICHTE" || raw.planViewMode === "PLAN"
       ? raw.planViewMode
       : "PLAN";
+  state.libraryCollapsed = !!raw.libraryCollapsed;
 
   return true;
 }
@@ -133,7 +137,7 @@ function applyLoadedState(raw) {
 function saveToLocal() {
   try {
     const payload = {
-      version: 2,
+      version: 3,
       data: getSerializableState(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -160,7 +164,7 @@ function touchState() {
 
 function exportStateToFile() {
   const payload = {
-    version: 2,
+    version: 3,
     exportedAt: new Date().toISOString(),
     data: getSerializableState(),
   };
@@ -209,6 +213,7 @@ function initJsonExportImport() {
           renderSlots();
           renderLibraryFilters();
           renderLibraryList();
+          applyLibraryCollapsedState();
           renderPlan();
           updatePlanViewSwitcherUI();
         } catch (_) {
@@ -220,7 +225,7 @@ function initJsonExportImport() {
   }
 }
 
-// ---------- DEFAULT DATA (твоя последняя версия, без toolNo/toolName) ---
+// ---------- DEFAULT DATA (как раньше) -----------------------------------
 
 const DEFAULT_DATA = {
   currentKanal: "2",
@@ -574,6 +579,7 @@ const DEFAULT_DATA = {
   activeCategory: "Außen",
   spindleFilter: "SP4",
   planViewMode: "PLAN",
+  libraryCollapsed: false,
 };
 
 // ---------- MODAL -------------------------------------------------------
@@ -1002,7 +1008,7 @@ function renderSlots() {
       const meta = document.createElement("div");
       meta.className = "slot-meta";
 
-      // Название инструмента как бейдж вместо "Kanal X"
+      // Название инструмента как бейдж
       const toolName = (op.toolName || "").trim();
       if (toolName) {
         const toolLabel = document.createElement("span");
@@ -1180,6 +1186,11 @@ function renderLibraryFilters() {
   const container = $("#libraryFilters");
   container.innerHTML = "";
 
+  if (state.libraryCollapsed) {
+    // если свернуто — фильтры не рисуем
+    return;
+  }
+
   // Row 1: Kategorien
   const row1 = document.createElement("div");
   row1.className = "library-filters-row";
@@ -1238,6 +1249,11 @@ function renderLibraryFilters() {
 function renderLibraryList() {
   const list = $("#libraryList");
   list.innerHTML = "";
+
+  if (state.libraryCollapsed) {
+    // список скрыт — выводим пусто
+    return;
+  }
 
   const ops = getFilteredOperations();
 
@@ -1329,6 +1345,69 @@ function initAddOperationButton() {
   const btn = $("#addOpButton");
   if (!btn) return;
   btn.addEventListener("click", () => openOperationEditor(null));
+}
+
+// ---------- СВОРАТЫВАЕМ OPERATION LIBRARY -------------------------------
+
+function applyLibraryCollapsedState() {
+  const filters = $("#libraryFilters");
+  const list = $("#libraryList");
+  const addWrap = document.querySelector(".library-add");
+  const toggleBtn = $("#libraryCollapseBtn");
+
+  const collapsed = state.libraryCollapsed;
+
+  if (filters) filters.style.display = collapsed ? "none" : "";
+  if (list) list.style.display = collapsed ? "none" : "";
+  if (addWrap) addWrap.style.display = collapsed ? "none" : "";
+
+  if (toggleBtn) {
+    toggleBtn.setAttribute("aria-pressed", collapsed ? "true" : "false");
+    toggleBtn.title = collapsed
+      ? "OPERATION LIBRARY anzeigen"
+      : "OPERATION LIBRARY ausblenden";
+    toggleBtn.innerHTML = collapsed ? "▸" : "▾";
+  }
+}
+
+function initLibraryCollapse() {
+  const header = document.querySelector(".library-card .section-header");
+  if (!header) return;
+
+  let actions = header.querySelector(".section-actions");
+  if (!actions) {
+    actions = document.createElement("div");
+    actions.className = "section-actions";
+    header.appendChild(actions);
+  }
+
+  const btn = document.createElement("button");
+  btn.type = "button";
+  btn.id = "libraryCollapseBtn";
+  btn.className = "icon-button";
+  btn.style.minWidth = "24px";
+  btn.style.height = "24px";
+  btn.textContent = state.libraryCollapsed ? "▸" : "▾";
+  btn.title = state.libraryCollapsed
+    ? "OPERATION LIBRARY anzeigen"
+    : "OPERATION LIBRARY ausblenden";
+
+  btn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    state.libraryCollapsed = !state.libraryCollapsed;
+    applyLibraryCollapsedState();
+    // фильтры/список уже перерисованы с учётом collapsed
+    if (!state.libraryCollapsed) {
+      // при разворачивании перерисуем содержимое
+      renderLibraryFilters();
+      renderLibraryList();
+    }
+    touchState();
+  });
+
+  actions.prepend(btn);
+
+  applyLibraryCollapsedState();
 }
 
 // ---------- SLOT PICKER FILTERS -----------------------------------------
@@ -1758,6 +1837,7 @@ function init() {
   initExportButton();
   initJsonExportImport();
   initPlanViewSwitcher();
+  initLibraryCollapse();
 
   renderSlots();
   renderLibraryFilters();
