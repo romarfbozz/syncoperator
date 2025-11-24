@@ -11,7 +11,7 @@ const state = {
     "1": Array(MIN_SLOTS).fill(null),
     "2": Array(MIN_SLOTS).fill(null),
   },
-  // operations: {id, code, title, spindle, category, doppelhalter}
+  // operations: {id, code, title, spindle, category, doppelhalter, toolNo, toolName}
   library: [],
   categories: ["Alle", "Außen", "Innen", "Radial", "Axial"],
   activeCategory: "Alle",
@@ -20,6 +20,8 @@ const state = {
   // локальные фильтры только для модалки пустого слота
   slotPickerCategory: "Alle",
   slotPickerSpindle: "ALL",
+  // режим нижнего блока
+  planViewMode: "PLAN", // PLAN | EINRICHTE
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -73,6 +75,22 @@ function getSerializableState() {
     nextOpId: state.nextOpId,
     activeCategory: state.activeCategory,
     spindleFilter: state.spindleFilter,
+    planViewMode: state.planViewMode,
+  };
+}
+
+function normalizeOperation(op) {
+  return {
+    id: op.id || "op_" + Math.random().toString(16).slice(2),
+    code: op.code || "",
+    title: op.title || "",
+    spindle: op.spindle === "SP3" ? "SP3" : "SP4",
+    category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category)
+      ? op.category
+      : "Außen",
+    doppelhalter: !!op.doppelhalter,
+    toolNo: op.toolNo || "",
+    toolName: op.toolName || "",
   };
 }
 
@@ -93,16 +111,7 @@ function applyLoadedState(raw) {
     }
   });
 
-  const newLib = lib.map((op) => ({
-    id: op.id || "op_" + Math.random().toString(16).slice(2),
-    code: op.code || "",
-    title: op.title || "",
-    spindle: op.spindle === "SP3" ? "SP3" : "SP4",
-    category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category)
-      ? op.category
-      : "Außen",
-    doppelhalter: !!op.doppelhalter,
-  }));
+  const newLib = lib.map(normalizeOperation);
 
   state.currentKanal = raw.currentKanal === "2" ? "2" : "1";
   state.slots = newSlots;
@@ -113,6 +122,10 @@ function applyLoadedState(raw) {
       : newLib.length + 1;
   state.activeCategory = raw.activeCategory || "Alle";
   state.spindleFilter = raw.spindleFilter || "ALL";
+  state.planViewMode =
+    raw.planViewMode === "EINRICHTE" || raw.planViewMode === "PLAN"
+      ? raw.planViewMode
+      : "PLAN";
 
   return true;
 }
@@ -120,7 +133,7 @@ function applyLoadedState(raw) {
 function saveToLocal() {
   try {
     const payload = {
-      version: 1,
+      version: 2,
       data: getSerializableState(),
     };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
@@ -147,7 +160,7 @@ function touchState() {
 
 function exportStateToFile() {
   const payload = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     data: getSerializableState(),
   };
@@ -197,6 +210,7 @@ function initJsonExportImport() {
           renderLibraryFilters();
           renderLibraryList();
           renderPlan();
+          updatePlanViewSwitcherUI();
         } catch (_) {
           // ignore
         }
@@ -206,7 +220,7 @@ function initJsonExportImport() {
   }
 }
 
-// ---------- DEFAULT DATA (последний JSON) -------------------------------
+// ---------- DEFAULT DATA (твоя последняя версия, без toolNo/toolName) ---
 
 const DEFAULT_DATA = {
   currentKanal: "2",
@@ -559,6 +573,7 @@ const DEFAULT_DATA = {
   nextOpId: 39,
   activeCategory: "Außen",
   spindleFilter: "SP4",
+  planViewMode: "PLAN",
 };
 
 // ---------- MODAL -------------------------------------------------------
@@ -587,19 +602,17 @@ function openInfoModal() {
   openModalBase({
     title: "CitiTool · SyncOperator",
     description:
-      "Links Programmplan pro Kanal, rechts Operation Library. Unten Plan pro Kanal/Spindel.",
+      "Programmplan pro Kanal mit Werkzeugzuordnung und Einrichteblatt-Ansicht.",
   });
 
   const body = $("#modalBody");
   body.innerHTML = `
     <p class="text-muted">
-      • Klick auf eine Operation öffnet den Editor (L-Code, Name, Spindel, Kategorie, Doppelhalter).<br>
-      • Drag &amp; Drop aus der Library auf einen Slot belegt diesen.<br>
-      • Klick auf leeren Slot öffnet die Auswahlliste der Operationen inkl. Filter.<br>
-      • Programmplan-Slots lassen sich untereinander verschieben (Drag &amp; Drop).<br>
-      • L-Code im Plan richtet sich nach Kanal und Zeile (L11xx / L21xx).<br>
-      • Anzeigeformat: Name L-Code.<br>
-      • SP3 = blau, SP4 = grün.
+      • Operationen im Programmplan: Name L-Code + Werkzeugname.<br>
+      • Werkzeugdaten je Operation: Werkzeug-Nr. (T..) und Werkzeug-Name.<br>
+      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern).<br>
+      • Umschalter unten: Programmplan ↔ Einrichteblatt (Werkzeugübersicht).<br>
+      • L-Code im Plan: dynamisch nach Kanal und Zeile (L11xx / L21xx).
     </p>
   `;
 
@@ -612,7 +625,7 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-// единый редактор: create + edit, L-Code + Doppelhalter
+// единый редактор: create + edit, включая Werkzeug
 
 function openOperationEditor(opId = null) {
   const isEdit = !!opId;
@@ -622,7 +635,8 @@ function openOperationEditor(opId = null) {
 
   openModalBase({
     title: isEdit ? "Operation bearbeiten" : "Neue Operation",
-    description: "L-Code (Basis), Name, Spindel, Kategorie und Doppelhalter.",
+    description:
+      "L-Code, Name, Spindel, Kategorie, Doppelhalter und Werkzeugdaten.",
   });
 
   const body = $("#modalBody");
@@ -715,7 +729,37 @@ function openOperationEditor(opId = null) {
     toggle.classList.toggle("active");
   });
 
-  body.append(row1, row2, row3);
+  // Четвёртая строка: Werkzeug-Nr. + Werkzeug-Name
+  const row4 = document.createElement("div");
+  row4.className = "form-row";
+
+  const toolNoGroup = document.createElement("div");
+  toolNoGroup.className = "form-group form-group--code";
+  const toolNoLabel = document.createElement("div");
+  toolNoLabel.className = "form-label";
+  toolNoLabel.textContent = "Werkzeug-Nr.";
+  const toolNoInput = document.createElement("input");
+  toolNoInput.type = "text";
+  toolNoInput.className = "field-input";
+  toolNoInput.placeholder = "T11";
+  toolNoInput.value = existing ? existing.toolNo || "" : "";
+  toolNoGroup.append(toolNoLabel, toolNoInput);
+
+  const toolNameGroup = document.createElement("div");
+  toolNameGroup.className = "form-group";
+  const toolNameLabel = document.createElement("div");
+  toolNameLabel.className = "form-label";
+  toolNameLabel.textContent = "Werkzeug-Name";
+  const toolNameInput = document.createElement("input");
+  toolNameInput.type = "text";
+  toolNameInput.className = "field-input";
+  toolNameInput.placeholder = "ABSTECHER-2mm-Y";
+  toolNameInput.value = existing ? existing.toolName || "" : "";
+  toolNameGroup.append(toolNameLabel, toolNameInput);
+
+  row4.append(toolNoGroup, toolNameGroup);
+
+  body.append(row1, row2, row3, row4);
 
   const footer = $("#modalFooter");
 
@@ -746,12 +790,17 @@ function openOperationEditor(opId = null) {
     const category = catSelect.value;
     const doppelhalter = toggle.classList.contains("active");
 
+    const toolNo = toolNoInput.value.trim();
+    const toolName = toolNameInput.value.trim();
+
     if (isEdit) {
       existing.code = code;
       existing.title = title;
       existing.spindle = spindle;
       existing.category = category;
       existing.doppelhalter = doppelhalter;
+      existing.toolNo = toolNo;
+      existing.toolName = toolName;
     } else {
       const newOp = {
         id: "op_" + state.nextOpId++,
@@ -760,6 +809,8 @@ function openOperationEditor(opId = null) {
         spindle,
         category,
         doppelhalter,
+        toolNo,
+        toolName,
       };
       state.library.push(newOp);
     }
@@ -768,6 +819,7 @@ function openOperationEditor(opId = null) {
     renderLibraryList();
     renderSlots();
     renderPlan();
+    updatePlanViewSwitcherUI();
     touchState();
   });
 
@@ -818,6 +870,7 @@ function openDeleteOperationModal(opId) {
     renderLibraryList();
     renderSlots();
     renderPlan();
+    updatePlanViewSwitcherUI();
     touchState();
   });
 
@@ -882,6 +935,7 @@ function initKanalSwitcher() {
       updateHint();
       renderSlots();
       renderPlan();
+      updatePlanViewSwitcherUI();
       touchState();
     });
   });
@@ -948,9 +1002,14 @@ function renderSlots() {
       const meta = document.createElement("div");
       meta.className = "slot-meta";
 
-      const label = document.createElement("span");
-      label.className = "slot-meta-label";
-      label.textContent = `Kanal ${state.currentKanal}`;
+      // Название инструмента вместо "Kanal X"
+      const toolName = (op.toolName || "").trim();
+      if (toolName) {
+        const toolLabel = document.createElement("span");
+        toolLabel.className = "slot-meta-label";
+        toolLabel.textContent = toolName;
+        meta.appendChild(toolLabel);
+      }
 
       const badgeSp = document.createElement("span");
       badgeSp.className =
@@ -961,7 +1020,7 @@ function renderSlots() {
       badgeCat.className = "badge badge-soft";
       badgeCat.textContent = op.category;
 
-      meta.append(label, badgeSp, badgeCat);
+      meta.append(badgeSp, badgeCat);
 
       if (op.doppelhalter) {
         const badgeD = document.createElement("span");
@@ -1003,6 +1062,7 @@ function renderSlots() {
       kanalSlots[i] = null;
       renderSlots();
       renderPlan();
+      updatePlanViewSwitcherUI();
       touchState();
     });
 
@@ -1079,6 +1139,7 @@ function onSlotDrop(e) {
 
   renderSlots();
   renderPlan();
+  updatePlanViewSwitcherUI();
   touchState();
 }
 
@@ -1090,6 +1151,7 @@ function initAddSlotButton() {
     kanalSlots.push(null);
     renderSlots();
     renderPlan();
+    updatePlanViewSwitcherUI();
     touchState();
   });
 }
@@ -1230,6 +1292,15 @@ function renderLibraryList() {
       badgeD.className = "badge badge-tag";
       badgeD.textContent = "Doppelhalter";
       meta.appendChild(badgeD);
+    }
+
+    // Бейдж Txx, если указан Werkzeug-Nr.
+    const toolNo = (op.toolNo || "").trim();
+    if (toolNo) {
+      const badgeT = document.createElement("span");
+      badgeT.className = "badge badge-soft";
+      badgeT.textContent = toolNo;
+      meta.appendChild(badgeT);
     }
 
     const btnWrap = document.createElement("div");
@@ -1420,6 +1491,14 @@ function openSlotOperationPicker(slotIndex) {
         meta.appendChild(badgeD);
       }
 
+      const toolNo = (op.toolNo || "").trim();
+      if (toolNo) {
+        const badgeT = document.createElement("span");
+        badgeT.className = "badge badge-soft";
+        badgeT.textContent = toolNo;
+        meta.appendChild(badgeT);
+      }
+
       footer.append(meta);
 
       btn.append(title, footer);
@@ -1430,6 +1509,7 @@ function openSlotOperationPicker(slotIndex) {
         closeModal();
         renderSlots();
         renderPlan();
+        updatePlanViewSwitcherUI();
         touchState();
       });
 
@@ -1449,10 +1529,125 @@ function openSlotOperationPicker(slotIndex) {
   footer.appendChild(cancelBtn);
 }
 
-// ---------- PLAN (inkl. PDF via Print) ----------------------------------
+// ---------- PLAN VIEW SWITCHER (Programmplan / Einrichteblatt) ---------
+
+function initPlanViewSwitcher() {
+  const actions = document.querySelector(".plan-card .section-actions");
+  if (!actions) return;
+
+  const container = document.createElement("div");
+  container.className = "plan-view-switch";
+
+  const btnPlan = document.createElement("button");
+  btnPlan.type = "button";
+  btnPlan.className = "plan-view-pill";
+  btnPlan.dataset.view = "PLAN";
+  btnPlan.textContent = "Programmplan";
+
+  const btnEin = document.createElement("button");
+  btnEin.type = "button";
+  btnEin.className = "plan-view-pill";
+  btnEin.dataset.view = "EINRICHTE";
+  btnEin.textContent = "Einrichteblatt";
+
+  container.append(btnPlan, btnEin);
+
+  // вставляем слева от кнопок PDF/JSON
+  actions.prepend(container);
+
+  container.addEventListener("click", (e) => {
+    const btn = e.target.closest(".plan-view-pill");
+    if (!btn) return;
+    const view = btn.dataset.view;
+    if (!view || view === state.planViewMode) return;
+    state.planViewMode = view;
+    updatePlanViewSwitcherUI();
+    renderPlan();
+    touchState();
+  });
+
+  updatePlanViewSwitcherUI();
+}
+
+function updatePlanViewSwitcherUI() {
+  const pills = document.querySelectorAll(".plan-view-pill");
+  pills.forEach((btn) => {
+    const view = btn.dataset.view;
+    const active = view === state.planViewMode;
+    btn.classList.toggle("active", active);
+  });
+}
+
+// ---------- PLAN DATA HELPERS -------------------------------------------
+
+function buildEinrichteData() {
+  // Словарь по Werkzeug-Nr.
+  const map = {};
+
+  function addFromKanal(kanal, isOben) {
+    const slots = state.slots[kanal] || [];
+    for (let i = 0; i < slots.length; i++) {
+      const opId = slots[i];
+      if (!opId) continue;
+      const op = getOperationById(opId);
+      if (!op) continue;
+
+      const toolNo = (op.toolNo || "").trim();
+      const toolName = (op.toolName || "").trim();
+      if (!toolNo) continue; // без номера не попадает в Einrichteblatt
+
+      if (!map[toolNo]) {
+        map[toolNo] = {
+          toolNo,
+          oben: "",
+          unten: "",
+        };
+      }
+
+      const text = toolName || op.title || "";
+      if (isOben) {
+        if (!map[toolNo].oben) map[toolNo].oben = text;
+      } else {
+        if (!map[toolNo].unten) map[toolNo].unten = text;
+      }
+    }
+  }
+
+  // Kanal 1 = Revolver oben, Kanal 2 = unten
+  addFromKanal("1", true);
+  addFromKanal("2", false);
+
+  const arr = Object.values(map);
+
+  // сортируем по числу после 'T', если возможно
+  arr.sort((a, b) => {
+    const ta = a.toolNo || "";
+    const tb = b.toolNo || "";
+    const na =
+      ta[0] === "T" ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+    const nb =
+      tb[0] === "T" ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+    if (na !== nb) return na - nb;
+    return ta.localeCompare(tb);
+  });
+
+  return arr;
+}
+
+// ---------- PLAN (inkl. PDF via Print + Einrichteblatt) -----------------
 
 function renderPlan() {
   const table = $("#planTable");
+  if (!table) return;
+
+  if (state.planViewMode === "EINRICHTE") {
+    renderEinrichteblatt(table);
+  } else {
+    renderProgrammplan(table);
+  }
+}
+
+function renderProgrammplan(table) {
   const slots1 = state.slots["1"];
   const slots2 = state.slots["2"];
   const rowCount = Math.max(slots1.length, slots2.length, MIN_SLOTS);
@@ -1510,6 +1705,35 @@ function renderPlan() {
   table.innerHTML = html;
 }
 
+function renderEinrichteblatt(table) {
+  const data = buildEinrichteData();
+
+  let html = "";
+  html += "<thead>";
+  html += "<tr>";
+  html += '<th class="plan-row-index">T</th>';
+  html += '<th class="th-group">Werkzeug · Revolver oben (Kanal 1)</th>';
+  html += '<th class="th-group kanal-divider">Werkzeug · Revolver unten (Kanal 2)</th>';
+  html += "</tr>";
+  html += "</thead>";
+  html += "<tbody>";
+
+  if (!data.length) {
+    html += '<tr><td colspan="3" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
+  } else {
+    data.forEach((row) => {
+      html += "<tr>";
+      html += `<td class="plan-row-index">${row.toolNo || ""}</td>`;
+      html += `<td class="plan-cell">${row.oben || ""}</td>`;
+      html += `<td class="plan-cell kanal-divider">${row.unten || ""}</td>`;
+      html += "</tr>";
+    });
+  }
+
+  html += "</tbody>";
+  table.innerHTML = html;
+}
+
 function initExportButton() {
   const btn = $("#exportPdfBtn");
   if (!btn) return;
@@ -1533,10 +1757,13 @@ function init() {
   initModalBaseEvents();
   initExportButton();
   initJsonExportImport();
+  initPlanViewSwitcher();
+
   renderSlots();
   renderLibraryFilters();
   renderLibraryList();
   renderPlan();
+  updatePlanViewSwitcherUI();
 }
 
 document.addEventListener("DOMContentLoaded", init);
