@@ -1039,6 +1039,27 @@ body {
   color: var(--danger);
 }
 
+/* ====== ДОБАВЛЕННЫЙ БЛОК ДЛЯ ДЕСКТОПА (>=1200px) ====== */
+
+@media (min-width: 1200px) {
+  .app-shell {
+    max-width: 1280px;
+    padding-inline: 40px;
+  }
+
+  .layout-main {
+    gap: 20px;
+  }
+
+  .plan-table-wrapper {
+    max-height: none;
+  }
+
+  .card {
+    padding: 16px 18px 20px;
+  }
+}
+
 /* PRINT (PDF EXPORT, DIN A4, mit Farben) */
 
 @media print {
