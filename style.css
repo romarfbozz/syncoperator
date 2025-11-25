@@ -849,7 +849,7 @@ select {
 
 /* ------------------ DESKTOP LAYOUT (ПК) ------------------ */
 
-@media (min-width: 960px) {
+@media (min-width: 1200px) {
   body {
     padding: 24px;
   }
@@ -865,9 +865,6 @@ select {
     gap: 12px;
     align-items: flex-start;
   }
-
-  /* предполагаем, что план и слоты слева, библиотека справа.
-     если у тебя другие wrapper-классы — это просто не подействует, но ничего не сломает. */
 
   .plan-card {
     grid-column: 1 / 2;
