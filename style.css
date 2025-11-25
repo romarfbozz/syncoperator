@@ -52,7 +52,7 @@ select {
 
 .app-shell {
   position: relative;
-  max-width: 960px; /* как «телефон в центре» даже на ПК */
+  max-width: 960px;
   margin: 0 auto;
   border-radius: 26px;
   padding: 12px;
@@ -336,8 +336,9 @@ select {
   background: var(--bg-elevated-strong);
 }
 
+/* шапка: тёмная, без диких градиентов */
 #planTable thead {
-  background: linear-gradient(135deg, rgba(15, 23, 42, 0.95), #111827);
+  background: #0f172a;
   color: #e5e7eb;
 }
 
@@ -361,10 +362,13 @@ select {
   border-right: 1px solid rgba(148, 163, 184, 0.4);
 }
 
+/* базовый фон ячеек */
 .plan-cell {
   min-width: 72px;
+  background: #ffffff;
 }
 
+/* групповые заголовки */
 .th-group {
   text-align: center !important;
   font-size: 11px;
@@ -372,16 +376,37 @@ select {
   text-transform: uppercase;
 }
 
+/* заголовки SP3 / SP4 более мягкие */
 .sp3-head {
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.22), transparent);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.35), #1d4ed8);
 }
 
 .sp4-head {
-  background: linear-gradient(135deg, rgba(34, 197, 94, 0.3), transparent);
+  background: linear-gradient(135deg, rgba(34, 197, 94, 0.35), #16a34a);
 }
 
 .kanal-divider {
   border-left: 2px solid rgba(148, 163, 184, 0.9) !important;
+}
+
+/* Цвета по колонкам (и для Programmplan, и для Einrichteblatt):
+   col 1 = Index / T(K1)
+   col 2 = SP4 (K1)  -> зелёный фон
+   col 3 = SP3 (K1 / T(K2)) -> синий фон для данных
+   col 4 = SP3 (K2) -> синий фон
+   col 5 = SP4 (K2) -> зелёный фон
+*/
+#planTable tbody td:nth-child(2) {
+  background: #f0fdf4; /* мягкий зелёный */
+}
+
+#planTable tbody td:nth-child(3),
+#planTable tbody td:nth-child(4) {
+  background: #eff6ff; /* мягкий синий */
+}
+
+#planTable tbody td:nth-child(5) {
+  background: #f0fdf4;
 }
 
 /* ------------------ SLOTS ------------------ */
