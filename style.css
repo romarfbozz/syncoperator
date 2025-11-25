@@ -11,7 +11,6 @@
   --accent: #2563eb;
   --accent-soft: rgba(37, 99, 235, 0.08);
   --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.16);
-  --shadow-subtle: 0 12px 30px rgba(15, 23, 42, 0.12);
 
   --sp4: #22c55e; /* Spindel 4 – grün */
   --sp3: #3b82f6; /* Spindel 3 – blau */
@@ -20,8 +19,6 @@
 
   --radius-card: 20px;
   --radius-pill: 999px;
-
-  --header-height: 64px;
 }
 
 *,
@@ -55,7 +52,7 @@ select {
 
 .app-shell {
   position: relative;
-  max-width: 960px;
+  max-width: 960px; /* как «телефон в центре» даже на ПК */
   margin: 0 auto;
   border-radius: 26px;
   padding: 12px;
@@ -324,7 +321,7 @@ select {
   color: var(--text-muted);
 }
 
-/* ------------------ PROGRAMMPLAN / SLOTS ------------------ */
+/* ------------------ PROGRAMMPLAN / TABLE ------------------ */
 
 .plan-card {
   margin-bottom: 4px;
@@ -387,7 +384,7 @@ select {
   border-left: 2px solid rgba(148, 163, 184, 0.9) !important;
 }
 
-/* slots */
+/* ------------------ SLOTS ------------------ */
 
 .slot-card {
   margin-top: 6px;
@@ -464,8 +461,6 @@ select {
   justify-content: center;
   padding-right: 2px;
 }
-
-/* Add Slot */
 
 #addSlotBtn {
   margin-top: 6px;
@@ -569,8 +564,6 @@ select {
   background: rgba(148, 163, 184, 0.18);
 }
 
-/* список операций */
-
 #libraryList {
   display: flex;
   flex-direction: column;
@@ -620,8 +613,6 @@ select {
   flex-wrap: wrap;
   gap: 4px;
 }
-
-/* add op */
 
 .library-add {
   margin-top: 5px;
@@ -763,8 +754,7 @@ select {
       135deg,
       rgba(15, 23, 42, 0.96),
       rgba(15, 23, 42, 0.96)
-    ),
-    rgba(15, 23, 42, 0.96);
+    );
   color: #e5e7eb;
   box-shadow: 0 28px 80px rgba(0, 0, 0, 0.7);
   border: 1px solid rgba(148, 163, 184, 0.6);
@@ -830,8 +820,6 @@ select {
   gap: 6px;
 }
 
-/* список в модалке выбора операции */
-
 .slot-picker-list {
   display: flex;
   flex-direction: column;
@@ -845,51 +833,6 @@ select {
 .text-muted {
   font-size: 11px;
   color: var(--text-muted);
-}
-
-/* ------------------ DESKTOP LAYOUT (ПК) ------------------ */
-
-@media (min-width: 1200px) {
-  body {
-    padding: 24px;
-  }
-
-  .app-shell {
-    max-width: 1180px;
-    padding: 14px;
-  }
-
-  .app-main {
-    display: grid;
-    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-    gap: 12px;
-    align-items: flex-start;
-  }
-
-  .plan-card {
-    grid-column: 1 / 2;
-  }
-
-  .slot-card {
-    grid-column: 1 / 2;
-  }
-
-  .library-card {
-    grid-column: 2 / 3;
-  }
-
-  #libraryList {
-    max-height: 420px;
-  }
-
-  #planTable th,
-  #planTable td {
-    padding: 5px 8px;
-  }
-
-  .slot-row {
-    padding-inline: 6px;
-  }
 }
 
 /* ------------------ PRINT (DIN A4 / PDF) ------------------ */
