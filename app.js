@@ -1,22 +1,26 @@
-// app.js — мобильная версия CitiTool / SyncOperator
+// app.js — CitiTool / SyncOperator (mobile)
 // ЦЕЛЫЙ ФАЙЛ, без "find & replace"
 
-/* ================== КОНСТАНТЫ И ДАННЫЕ ПО УМОЛЧАНИЮ ================== */
+/* ================== КОНСТАНТЫ И ДЕФОЛТНЫЕ ДАННЫЕ ================== */
 
 const STORAGE_KEY = "CitiTool_SyncOperator_State_v3";
 
-// сколько строк в PLAN – KANAL / SPINDEL
 const PLAN_ROWS = 40;
 
-// Спиндели
 const SPINDLE_SP4 = "SP4";
 const SPINDLE_SP3 = "SP3";
 
-// Виды плана (если используешь Einrichteblatt)
 const PLAN_VIEW_PROGRAMMPLAN = "programmplan";
 const PLAN_VIEW_EINRICHTE = "einrichteblatt";
 
-/** Демо-операции (минимальный набор, дальше можно расширить) */
+// Минималистичная SVG-иконка мусорки
+const TRASH_SVG = `
+<svg class="icon-svg icon-svg-trash" viewBox="0 0 24 24" aria-hidden="true">
+  <path d="M9 3.5a1 1 0 0 1 .94-.66h4.12a1 1 0 0 1 .94.66l.5 1.5H19a.75.75 0 0 1 0 1.5h-1.1l-1.02 12.02A1.75 1.75 0 0 1 15.13 20H8.87a1.75 1.75 0 0 1-1.75-1.48L6.1 6.5H5a.75.75 0 0 1 0-1.5h3.5l.5-1.5Zm1.62 1.5h2.76l-.2-.6h-2.36l-.2.6ZM7.62 6.5l1 11.78a.25.25 0 0 0 .25.22h6.26a.25.25 0 0 0 .25-.22L16.38 6.5H7.62Zm2.13 2.5a.75.75 0 0 1 .75.75v6a.75.75 0 0 1-1.5 0v-6a.75.75 0 0 1 .75-.75Zm4.5 0a.75.75 0 0 1 .75.75v6a.75.75 0 0 1-1.5 0v-6a.75.75 0 0 1 .75-.75Z" />
+</svg>
+`;
+
+/** Демо-операции */
 const DEFAULT_OPERATION_LIBRARY = [
   {
     id: "op-1",
@@ -52,7 +56,7 @@ const DEFAULT_OPERATION_LIBRARY = [
   }
 ];
 
-/* ================== ГЛОБАЛЬНОЕ СОСТОЯНИЕ ================== */
+/* ================== СОСТОЯНИЕ ================== */
 
 let state = {
   zeichnungsnummer: {
@@ -66,19 +70,19 @@ let state = {
     kanal2: []
   },
   operationLibrary: [],
+  // Einrichteblatt – инструменты, пока простая структура
   werkzeuge: {
-    kanal1: [],
+    kanal1: [], // [{row:1, t:"T1", name:"..."}]
     kanal2: []
   }
 };
 
-// служебные переменные для модалок
+// служебные переменные
 let currentEditingOperation = null; // {mode: 'library'|'slot'|'createForSlot', opId/slotId}
 let currentPickerTargetSlotId = null;
 
-// drag&drop
-let dragSlotId = null; // если тянем слот
-let dragOpId = null;   // если тянем операцию из библиотеки
+let dragSlotId = null; // если тащим слот
+let dragOpId = null;   // если тащим операцию из библиотеки
 
 /* ================== УТИЛИТЫ ================== */
 
@@ -86,7 +90,7 @@ function generateId(prefix = "id") {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-// L-Code: L1{kanal}{rowIndex(2 цифры)} -> L1115, L1120 ...
+// L-Code: L1{kanal}{rowIndex(2)} → L1115, L1210 …
 function computeLCode(kanal, rowIndex) {
   const line = String(rowIndex).padStart(2, "0");
   return `L1${kanal}${line}`;
@@ -110,14 +114,16 @@ function setCurrentKanalArray(arr) {
   }
 }
 
-/* ================== INIT / LOAD / SAVE ================== */
+/* ================== LOAD / SAVE ================== */
 
 function loadState() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-      // первая загрузка – демо
       state.operationLibrary = clone(DEFAULT_OPERATION_LIBRARY);
+      // авто 5 слотов для обоих каналов
+      state.programmplan.kanal1 = createInitialEmptySlots(1);
+      state.programmplan.kanal2 = createInitialEmptySlots(2);
       return;
     }
     const parsed = JSON.parse(raw);
@@ -134,14 +140,24 @@ function loadState() {
     }
 
     state.programmplan = parsed.programmplan || { kanal1: [], kanal2: [] };
-    state.operationLibrary = parsed.operationLibrary || clone(DEFAULT_OPERATION_LIBRARY);
+    state.operationLibrary =
+      parsed.operationLibrary || clone(DEFAULT_OPERATION_LIBRARY);
     state.werkzeuge = parsed.werkzeuge || { kanal1: [], kanal2: [] };
-
     state.currentKanal = parsed.currentKanal || 1;
     state.currentPlanView = parsed.currentPlanView || PLAN_VIEW_PROGRAMMPLAN;
+
+    // если план пустой – создаём 5 слотов
+    if (!state.programmplan.kanal1 || !state.programmplan.kanal1.length) {
+      state.programmplan.kanal1 = createInitialEmptySlots(1);
+    }
+    if (!state.programmplan.kanal2 || !state.programmplan.kanal2.length) {
+      state.programmplan.kanal2 = createInitialEmptySlots(2);
+    }
   } catch (e) {
     console.error("Fehler beim Laden state:", e);
     state.operationLibrary = clone(DEFAULT_OPERATION_LIBRARY);
+    state.programmplan.kanal1 = createInitialEmptySlots(1);
+    state.programmplan.kanal2 = createInitialEmptySlots(2);
   }
 }
 
@@ -155,6 +171,29 @@ function saveState() {
     currentPlanView: state.currentPlanView
   };
   localStorage.setItem(STORAGE_KEY, JSON.stringify(toSave));
+}
+
+/* ================== ИНИЦИАЛЬНЫЕ СЛОТЫ ================== */
+
+function createEmptySlot(kanal, index) {
+  return {
+    id: generateId(`slot${kanal}`),
+    kanal,
+    sequenceIndex: index,
+    name: "",
+    toolNo: "",
+    spindle: kanal === 1 ? SPINDLE_SP4 : SPINDLE_SP3, // базово, можно менять
+    category: "",
+    doppelhalter: false
+  };
+}
+
+function createInitialEmptySlots(kanal) {
+  const arr = [];
+  for (let i = 1; i <= 5; i++) {
+    arr.push(createEmptySlot(kanal, i));
+  }
+  return arr;
 }
 
 /* ================== RENDER: ZEICHNUNGSNUMMER ================== */
@@ -176,8 +215,9 @@ function renderSlots() {
   listEl.innerHTML = "";
   const arr = getCurrentKanalArray();
 
-  // сортируем по sequenceIndex
-  const sorted = [...arr].sort((a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0));
+  const sorted = [...arr].sort(
+    (a, b) => (a.sequenceIndex || 0) - (b.sequenceIndex || 0)
+  );
 
   for (let i = 0; i < sorted.length; i++) {
     const slot = sorted[i];
@@ -243,7 +283,7 @@ function renderSlots() {
 
     const deleteBtn = document.createElement("button");
     deleteBtn.className = "icon-button";
-    deleteBtn.innerHTML = "🗑";
+    deleteBtn.innerHTML = TRASH_SVG;
     deleteBtn.title = "Operation entfernen";
     deleteBtn.addEventListener("click", (e) => {
       e.stopPropagation();
@@ -257,12 +297,12 @@ function renderSlots() {
     row.appendChild(mainEl);
     row.appendChild(actionsEl);
 
-    // клик по строке = Operation auswählen
+    // клик по строке – окно выбора операции
     row.addEventListener("click", () => {
       openOperationPicker(slot.id);
     });
 
-    // drag&drop слота
+    // drag&drop слотов и операций
     row.addEventListener("dragstart", onSlotDragStart);
     row.addEventListener("dragover", onSlotDragOver);
     row.addEventListener("dragleave", onSlotDragLeave);
@@ -271,41 +311,25 @@ function renderSlots() {
     listEl.appendChild(row);
   }
 
-  // кнопка "пустой" слот (добавить)
+  // кнопка "+ Weitere Zeile"
   const addBtn = document.getElementById("addSlotBtn");
   if (addBtn) {
     addBtn.onclick = () => {
-      const newSlot = createEmptySlot();
       const arrNow = getCurrentKanalArray();
-      newSlot.sequenceIndex = arrNow.length + 1;
+      const newSlot = createEmptySlot(state.currentKanal, arrNow.length + 1);
       arrNow.push(newSlot);
       setCurrentKanalArray(arrNow);
       saveState();
       renderSlots();
       renderPlan();
-      // сразу открыть выбор операции
       openOperationPicker(newSlot.id);
     };
   }
 }
 
-function createEmptySlot() {
-  return {
-    id: generateId("slot"),
-    kanal: state.currentKanal,
-    sequenceIndex: 0,
-    name: "",
-    toolNo: "",
-    spindle: SPINDLE_SP4,
-    category: "",
-    doppelhalter: false
-  };
-}
-
 function deleteSlot(slotId) {
   let arr = getCurrentKanalArray();
   arr = arr.filter((s) => s.id !== slotId);
-  // пересчитать sequenceIndex
   arr.forEach((s, i) => (s.sequenceIndex = i + 1));
   setCurrentKanalArray(arr);
   saveState();
@@ -340,7 +364,7 @@ function onSlotDrop(e) {
   const targetSlotId = targetRow.dataset.slotId;
   if (!targetSlotId) return;
 
-  // если тянули операцию из библиотеки
+  // тянули операцию из библиотеки
   if (dragOpId) {
     const op = state.operationLibrary.find((o) => o.id === dragOpId);
     if (!op) {
@@ -370,7 +394,7 @@ function onSlotDrop(e) {
     return;
   }
 
-  // если тянули слот (перестановка)
+  // тянули сам слот
   if (!dragSlotId || dragSlotId === targetSlotId) {
     dragSlotId = null;
     return;
@@ -405,6 +429,15 @@ function renderPlan() {
 
   tbody.innerHTML = "";
 
+  if (state.currentPlanView === PLAN_VIEW_PROGRAMMPLAN) {
+    renderPlanProgrammplan(tbody);
+  } else {
+    renderPlanEinrichteblatt(tbody);
+  }
+}
+
+// План по слотам (Programmplan)
+function renderPlanProgrammplan(tbody) {
   for (let rowIndex = 1; rowIndex <= PLAN_ROWS; rowIndex++) {
     const tr = document.createElement("tr");
 
@@ -429,7 +462,6 @@ function renderPlan() {
         const lCode = computeLCode(cfg.kanal, rowIndex);
         const name = op.name || "(ohne)";
         const tool = op.toolNo || "";
-        // Формат: Name  T0101  L1115
         const text = `${name}  ${tool}  ${lCode}`;
         td.textContent = text.trim();
       } else {
@@ -440,6 +472,54 @@ function renderPlan() {
     }
 
     tbody.appendChild(tr);
+  }
+}
+
+// Einrichteblatt – по инструментам (пока просто T + Name)
+function renderPlanEinrichteblatt(tbody) {
+  for (let rowIndex = 1; rowIndex <= PLAN_ROWS; rowIndex++) {
+    const tr = document.createElement("tr");
+
+    const idxTd = document.createElement("td");
+    idxTd.className = "plan-row-index";
+    idxTd.textContent = String(rowIndex);
+    tr.appendChild(idxTd);
+
+    const rowK1 = state.werkzeuge.kanal1[rowIndex - 1];
+    const rowK2 = state.werkzeuge.kanal2[rowIndex - 1];
+
+    // Kanal 1 – две ячейки (Revolver oben/unten ты можешь дальше разделить)
+    const tdK1a = document.createElement("td");
+    tdK1a.className = "plan-cell";
+    tdK1a.textContent = rowK1 ? `${rowK1.t || ""} ${rowK1.name || ""}`.trim() : "";
+    const tdK1b = document.createElement("td");
+    tdK1b.className = "plan-cell";
+    tdK1b.textContent = ""; // резерв под Standzeit / что захочешь
+
+    // Kanal 2 – две ячейки
+    const tdK2a = document.createElement("td");
+    tdK2a.className = "plan-cell";
+    tdK2a.textContent = rowK2 ? `${rowK2.t || ""} ${rowK2.name || ""}`.trim() : "";
+    const tdK2b = document.createElement("td");
+    tdK2b.className = "plan-cell";
+    tdK2b.textContent = "";
+
+    tr.appendChild(tdK1a);
+    tr.appendChild(tdK1b);
+    tr.appendChild(tdK2a);
+    tr.appendChild(tdK2b);
+
+    tbody.appendChild(tr);
+  }
+
+  if (!state.werkzeuge.kanal1.length && !state.werkzeuge.kanal2.length) {
+    const trInfo = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 5;
+    td.className = "plan-cell";
+    td.textContent = "Keine Werkzeugdaten vorhanden.";
+    trInfo.appendChild(td);
+    tbody.appendChild(trInfo);
   }
 }
 
@@ -512,12 +592,12 @@ function renderOperationLibrary() {
     card.appendChild(title);
     card.appendChild(footer);
 
-    // Клик по карточке – редактор (как написано в UI: "Klick für Editor")
+    // клик – редактор операции
     card.addEventListener("click", () => {
       openOperationEditorForLibrary(op.id);
     });
 
-    // Drag&Drop из библиотеки в слот
+    // dragstart – перетаскиваем в слот
     card.addEventListener("dragstart", (e) => {
       dragOpId = op.id;
       dragSlotId = null;
@@ -863,6 +943,14 @@ function importJson(file) {
         parsed.operationLibrary || clone(DEFAULT_OPERATION_LIBRARY);
       state.werkzeuge = parsed.werkzeuge || { kanal1: [], kanal2: [] };
 
+      // если после импорта план пустой – создаём 5 слотов
+      if (!state.programmplan.kanal1 || !state.programmplan.kanal1.length) {
+        state.programmplan.kanal1 = createInitialEmptySlots(1);
+      }
+      if (!state.programmplan.kanal2 || !state.programmplan.kanal2.length) {
+        state.programmplan.kanal2 = createInitialEmptySlots(2);
+      }
+
       saveState();
       renderAll();
     } catch (err) {
@@ -873,7 +961,7 @@ function importJson(file) {
   reader.readAsText(file);
 }
 
-/* ================== NEUER ZEICHNUNGSNUMMER ================== */
+/* ================== NEUE ZEICHNUNGSNUMMER ================== */
 
 function newZeichnungsnummerFlow() {
   const nummer = prompt("Neue Zeichnungsnummer (Nummer):", "");
@@ -883,8 +971,10 @@ function newZeichnungsnummerFlow() {
 
   state.zeichnungsnummer = { nummer: nummer.trim(), name: name.trim() };
 
-  // полностью очищаем план и инструменты
-  state.programmplan = { kanal1: [], kanal2: [] };
+  state.programmplan = {
+    kanal1: createInitialEmptySlots(1),
+    kanal2: createInitialEmptySlots(2)
+  };
   state.werkzeuge = { kanal1: [], kanal2: [] };
 
   saveState();
@@ -929,11 +1019,46 @@ function initKanalSwitcher() {
   });
 }
 
+/* ================== PLAN VIEW SWITCH (Programmplan / Einrichteblatt) ================== */
+
+function initPlanViewSwitcher() {
+  const btnProg = document.getElementById("planViewProgrammplanBtn");
+  const btnEin = document.getElementById("planViewEinrichteBtn");
+  if (!btnProg || !btnEin) return;
+
+  function updateButtons() {
+    if (state.currentPlanView === PLAN_VIEW_PROGRAMMPLAN) {
+      btnProg.classList.add("active");
+      btnEin.classList.remove("active");
+    } else {
+      btnProg.classList.remove("active");
+      btnEin.classList.add("active");
+    }
+  }
+
+  btnProg.onclick = () => {
+    state.currentPlanView = PLAN_VIEW_PROGRAMMPLAN;
+    saveState();
+    updateButtons();
+    renderPlan();
+  };
+
+  btnEin.onclick = () => {
+    state.currentPlanView = PLAN_VIEW_EINRICHTE;
+    saveState();
+    updateButtons();
+    renderPlan();
+  };
+
+  updateButtons();
+}
+
 /* ================== ИНИЦИАЛИЗАЦИЯ ================== */
 
 function renderAll() {
   renderZeichnungsnummer();
   initKanalSwitcher();
+  initPlanViewSwitcher();
   renderSlots();
   renderPlan();
   renderOperationLibrary();
