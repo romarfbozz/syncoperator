@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>CitiTool – SyncOperator Workbench</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="style.desktop.css" />
+</head>
+<body>
+  <!-- SVG ICON SPRITE -->
+  <svg width="0" height="0" style="position:absolute;visibility:hidden">
+    <symbol id="icon-trash" viewBox="0 0 24 24">
+      <path
+        d="M9 3h6a1 1 0 0 1 1 1v1h3.25a.75.75 0 0 1 0 1.5H4.75a.75.75 0 0 1 0-1.5H8V4a1 1 0 0 1 1-1Zm1.5 2.5h3V4.5h-3v1Z"
+        fill="currentColor"
+        fill-opacity="0.9"
+      />
+      <path
+        d="M7.5 8.25a.75.75 0 0 1 .75.75v8.25h.25 7.5.25V9a.75.75 0 0 1 1.5 0v8.5A1.75 1.75 0 0 1 16 19.25H8A1.75 1.75 0 0 1 6.25 17.5V9a.75.75 0 0 1 .75-.75Zm3 0a.75.75 0 0 1 .75.75v7a.75.75 0 0 1-1.5 0v-7a.75.75 0 0 1 .75-.75Zm3 0a.75.75 0 0 1 .75.75v7a.75.75 0 0 1-1.5 0v-7a.75.75 0 0 1 .75-.75Z"
+        fill="currentColor"
+        fill-opacity="0.9"
+      />
+    </symbol>
+  </svg>
+
+  <div class="app-shell">
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="app-header-left">
+        <div class="app-logo-mark">
+          <div class="app-logo-ring">
+            <div class="app-logo-core">
+              <span class="app-logo-acronym">CT</span>
+              <span class="app-logo-module">Sync</span>
+            </div>
+          </div>
+        </div>
+        <div class="app-title-block">
+          <div class="app-title-row">
+            <div class="app-title">CitiTool</div>
+          </div>
+          <div class="app-subtitle">SyncOperator Modul · Kanal / Spindel Planung</div>
+        </div>
+      </div>
+      <div class="app-header-right">
+        <div class="app-meta">
+          <span class="app-meta-label">Projekt</span>
+          <span class="app-meta-value">WORKPIECE_1A</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- MAIN LAYOUT -->
+    <main class="layout-main">
+      <!-- LEFT: PROGRAMMPLAN -->
+      <section class="card slots-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Programmplan</div>
+          </div>
+        </div>
+
+        <div class="kanal-switcher-wrapper">
+          <div class="kanal-switcher" id="kanalSwitcher">
+            <button class="kanal-option active" type="button" data-kanal="1">
+              <span class="kanal-label">Kanal 1</span>
+              <span class="kanal-chip">1000.MPF</span>
+            </button>
+            <button class="kanal-option" type="button" data-kanal="2">
+              <span class="kanal-label">Kanal 2</span>
+              <span class="kanal-chip">2000.MPF</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="kanal-hint" id="kanalHint">Revolver oben · Kanal 1</div>
+
+        <div id="slotList" class="slot-list"></div>
+
+        <button id="addSlotBtn" class="btn-outline add-slot-btn" type="button">
+          <span class="btn-icon">＋</span>
+          <span>Weitere Zeile</span>
+        </button>
+      </section>
+
+      <!-- RIGHT: OPERATION LIBRARY -->
+      <section class="card library-card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">Operation Library</div>
+            <div class="section-subtitle">
+              Klick für Editor · Drag &amp; Drop in Slots
+            </div>
+          </div>
+          <button
+            type="button"
+            class="icon-button subtle"
+            id="infoButton"
+            aria-label="Info"
+          >
+            <span class="icon-circle">i</span>
+          </button>
+        </div>
+
+        <div class="library-filters" id="libraryFilters"></div>
+
+        <div id="libraryList" class="library-list"></div>
+
+        <div class="library-add">
+          <button id="addOpButton" type="button" class="btn-primary">
+            <span class="btn-icon">＋</span>
+            <span>Op hinzufügen</span>
+          </button>
+        </div>
+      </section>
+    </main>
+
+    <!-- PLAN -->
+    <section class="card plan-card">
+      <div class="section-header">
+        <div>
+          <div class="section-title">Plan – Kanal / Spindel</div>
+          <div class="section-subtitle">
+            Kanal 1/2 · Spindel 3/4 · Reihenfolge 1…N
+          </div>
+        </div>
+        <div class="section-actions">
+          <button id="importJsonBtn" type="button" class="btn-outline btn-small">
+            <span class="btn-icon">⇧</span>
+            <span>JSON Import</span>
+          </button>
+          <button id="exportJsonBtn" type="button" class="btn-outline btn-small">
+            <span class="btn-icon">⇩</span>
+            <span>JSON Export</span>
+          </button>
+          <button id="exportPdfBtn" type="button" class="btn-outline btn-small">
+            <span class="btn-icon">⟶</span>
+            <span>Als PDF</span>
+          </button>
+        </div>
+      </div>
+
+      <input
+        type="file"
+        id="importFileInput"
+        accept="application/json"
+        style="display:none"
+      />
+
+      <div class="plan-table-wrapper">
+        <table class="plan-table" id="planTable"></table>
+      </div>
+    </section>
+  </div>
+
+  <!-- MODAL ROOT -->
+  <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
+    <div class="modal-backdrop"></div>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-icon">
+          <span class="modal-icon-circle">i</span>
+        </div>
+        <div class="modal-header-text">
+          <div id="modalTitle" class="modal-title"></div>
+          <div id="modalDescription" class="modal-description"></div>
+        </div>
+        <button
+          type="button"
+          class="icon-button subtle"
+          id="modalCloseButton"
+          aria-label="Schließen"
+        >
+          ×
+        </button>
+      </div>
+      <div class="modal-body" id="modalBody"></div>
+      <div class="modal-footer" id="modalFooter"></div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
