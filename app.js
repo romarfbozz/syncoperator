@@ -24,6 +24,8 @@ const state = {
   planViewMode: "PLAN", // PLAN | EINRICHTE
   // свернуть / развернуть OPERATION LIBRARY
   libraryCollapsed: false,
+  // контекст "создать новую операцию и сразу положить в слот"
+  pendingSlotFill: null, // { kanal: "1" | "2", index: number } | null
 };
 
 const $ = (sel) => document.querySelector(sel);
@@ -138,6 +140,7 @@ function applyLoadedState(raw) {
       ? raw.planViewMode
       : "PLAN";
   state.libraryCollapsed = !!raw.libraryCollapsed;
+  state.pendingSlotFill = null;
 
   return true;
 }
@@ -775,7 +778,10 @@ function openOperationEditor(opId = null) {
   cancelBtn.type = "button";
   cancelBtn.className = "btn-outline";
   cancelBtn.textContent = "Abbrechen";
-  cancelBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", () => {
+    state.pendingSlotFill = null;
+    closeModal();
+  });
 
   const saveBtn = document.createElement("button");
   saveBtn.type = "button";
@@ -821,7 +827,21 @@ function openOperationEditor(opId = null) {
         toolName,
       };
       state.library.push(newOp);
+
+      const pending = state.pendingSlotFill;
+      if (
+        pending &&
+        (pending.kanal === "1" || pending.kanal === "2") &&
+        typeof pending.index === "number"
+      ) {
+        const kanal = pending.kanal;
+        ensureSlotCount(kanal, pending.index + 1);
+        if (!state.slots[kanal]) state.slots[kanal] = [];
+        state.slots[kanal][pending.index] = newOp.id;
+      }
     }
+
+    state.pendingSlotFill = null;
 
     closeModal();
     renderLibraryList();
@@ -858,7 +878,9 @@ function openDeleteOperationModal(opId) {
   cancelBtn.type = "button";
   cancelBtn.className = "btn-outline";
   cancelBtn.textContent = "Abbrechen";
-  cancelBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", () => {
+    closeModal();
+  });
 
   const deleteBtn = document.createElement("button");
   deleteBtn.type = "button";
@@ -891,12 +913,16 @@ function initModalBaseEvents() {
   const infoBtn = $("#infoButton");
 
   if (closeBtn) {
-    closeBtn.addEventListener("click", closeModal);
+    closeBtn.addEventListener("click", () => {
+      state.pendingSlotFill = null;
+      closeModal();
+    });
   }
 
   if (overlay) {
     overlay.addEventListener("click", (e) => {
       if (e.target === overlay) {
+        state.pendingSlotFill = null;
         closeModal();
       }
     });
@@ -904,6 +930,7 @@ function initModalBaseEvents() {
 
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") {
+      state.pendingSlotFill = null;
       closeModal();
     }
   });
@@ -1048,6 +1075,7 @@ function renderSlots() {
 
       container.addEventListener("click", (e) => {
         if (e.target.closest(".slot-actions")) return;
+        state.pendingSlotFill = null;
         openOperationEditor(opId);
       });
     } else {
@@ -1277,6 +1305,7 @@ function renderLibraryList() {
     });
 
     card.addEventListener("click", () => {
+      state.pendingSlotFill = null;
       openOperationEditor(op.id);
     });
 
@@ -1340,7 +1369,10 @@ function renderLibraryList() {
 function initAddOperationButton() {
   const btn = $("#addOpButton");
   if (!btn) return;
-  btn.addEventListener("click", () => openOperationEditor(null));
+  btn.addEventListener("click", () => {
+    state.pendingSlotFill = null;
+    openOperationEditor(null);
+  });
 }
 
 // ---------- COLLAPSE OPERATION LIBRARY ---------------------------------
@@ -1572,6 +1604,7 @@ function openSlotOperationPicker(slotIndex) {
       btn.addEventListener("click", () => {
         ensureSlotCount(state.currentKanal, slotIndex + 1);
         state.slots[state.currentKanal][slotIndex] = op.id;
+        state.pendingSlotFill = null;
         closeModal();
         renderSlots();
         renderPlan();
@@ -1593,6 +1626,10 @@ function openSlotOperationPicker(slotIndex) {
   newBtn.className = "btn-primary";
   newBtn.textContent = "Neue Operation anlegen";
   newBtn.addEventListener("click", () => {
+    state.pendingSlotFill = {
+      kanal: state.currentKanal,
+      index: slotIndex,
+    };
     closeModal();
     openOperationEditor(null);
   });
@@ -1601,7 +1638,10 @@ function openSlotOperationPicker(slotIndex) {
   cancelBtn.type = "button";
   cancelBtn.className = "btn-outline";
   cancelBtn.textContent = "Abbrechen";
-  cancelBtn.addEventListener("click", closeModal);
+  cancelBtn.addEventListener("click", () => {
+    state.pendingSlotFill = null;
+    closeModal();
+  });
 
   footer.append(newBtn, cancelBtn);
 }
@@ -1687,7 +1727,7 @@ function buildEinrichteData() {
     }
   }
 
-  addFromKanal("1", true);  // Revolver oben (Kanal 1)
+  addFromKanal("1", true); // Revolver oben (Kanal 1)
   addFromKanal("2", false); // Revolver unten (Kanal 2)
 
   const arr = Object.values(map);
@@ -1696,9 +1736,13 @@ function buildEinrichteData() {
     const ta = a.toolNo || "";
     const tb = b.toolNo || "";
     const na =
-      ta[0] === "T" ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      ta[0] === "T"
+        ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER;
     const nb =
-      tb[0] === "T" ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      tb[0] === "T"
+        ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER;
     if (na !== nb) return na - nb;
     return ta.localeCompare(tb);
   });
@@ -1724,7 +1768,9 @@ function buildPlanCellHtml(op, kanal, rowNumber) {
   const base = formatOperationLabelDynamic(op, kanal, rowNumber) || "";
   const toolNo = (op.toolNo || "").trim();
   if (!toolNo) return escapeHtml(base);
-  return `${escapeHtml(base)}<span class="plan-tool-no">${escapeHtml(toolNo)}</span>`;
+  return `${escapeHtml(
+    base
+  )}<span class="plan-tool-no">${escapeHtml(toolNo)}</span>`;
 }
 
 function renderProgrammplan(table) {
@@ -1737,7 +1783,8 @@ function renderProgrammplan(table) {
   html += "<tr>";
   html += '<th class="plan-row-index"></th>';
   html += '<th colspan="2" class="th-group">Kanal 1 · 1000.MPF</th>';
-  html += '<th colspan="2" class="th-group kanal-divider">Kanal 2 · 2000.MPF</th>';
+  html +=
+    '<th colspan="2" class="th-group kanal-divider">Kanal 2 · 2000.MPF</th>';
   html += "</tr>";
   html += "<tr>";
   html += '<th class="plan-row-index"></th>';
@@ -1794,7 +1841,8 @@ function renderEinrichteblatt(table) {
   html += "<tbody>";
 
   if (!data.length) {
-    html += '<tr><td colspan="4" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
+    html +=
+      '<tr><td colspan="4" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
   } else {
     data.forEach((row) => {
       const t1 = row.oben ? row.toolNo : "";
@@ -1802,7 +1850,9 @@ function renderEinrichteblatt(table) {
       html += "<tr>";
       html += `<td class="plan-row-index">${escapeHtml(t1)}</td>`;
       html += `<td class="plan-cell">${escapeHtml(row.oben || "")}</td>`;
-      html += `<td class="plan-row-index kanal-divider">${escapeHtml(t2)}</td>`;
+      html += `<td class="plan-row-index kanal-divider">${escapeHtml(
+        t2
+      )}</td>`;
       html += `<td class="plan-cell">${escapeHtml(row.unten || "")}</td>`;
       html += "</tr>";
     });
