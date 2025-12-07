@@ -67,12 +67,16 @@ body {
   margin-bottom: 18px;
   padding: 10px 16px;
   border-radius: 20px;
-  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.82));
+  background: radial-gradient(
+      circle at top left,
+      rgba(255, 255, 255, 0.96),
+      rgba(248, 250, 252, 0.9)
+    );
   backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid rgba(148, 163, 184, 0.5);
+  border: 1px solid rgba(148, 163, 184, 0.45);
   box-shadow:
-    0 18px 40px rgba(15, 23, 42, 0.18),
-    0 0 0 1px rgba(255, 255, 255, 0.7) inset;
+    0 18px 40px rgba(15, 23, 42, 0.16),
+    0 0 0 1px rgba(255, 255, 255, 0.8) inset;
 }
 
 .app-header-left {
@@ -84,44 +88,44 @@ body {
 /* PREMIUM LOGO – CT */
 
 .app-logo-mark {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
   background:
-    linear-gradient(135deg, #eaf3ff 0%, #dcecff 40%, #e8f1ff 100%);
+    radial-gradient(circle at 10% 0%, #eef3ff 0, #dce9ff 45%, #e8f3ff 100%);
   box-shadow:
-    0 10px 22px rgba(15, 23, 42, 0.22),
-    0 0 0 1px rgba(139, 164, 205, 0.45),
-    inset 0 0 0 1.5px rgba(255, 255, 255, 0.95);
+    0 10px 22px rgba(15, 23, 42, 0.18),
+    0 0 0 1px rgba(145, 167, 206, 0.6),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.9);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(14px) saturate(1.4);
+  backdrop-filter: blur(16px) saturate(1.4);
 }
 
 .app-logo-ring {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: 14px;
   background:
-    linear-gradient(135deg, #e8f1ff 0%, #f8fbff 70%);
+    linear-gradient(135deg, #e9f1ff 0%, #f7fbff 70%);
   box-shadow:
-    inset 0 0 0 1px rgba(185, 197, 219, 0.75),
-    0 3px 12px rgba(48, 72, 120, 0.18);
+    inset 0 0 0 1px rgba(181, 196, 220, 0.8),
+    0 3px 10px rgba(48, 72, 120, 0.16);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .app-logo-core {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   border-radius: 10px;
   background:
-    linear-gradient(145deg, #87bfff 0%, #5aa6ff 45%, #4092ff 100%);
+    linear-gradient(145deg, #5aa8ff 0%, #408eff 45%, #2563eb 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
-    0 4px 10px rgba(46, 86, 153, 0.35);
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
+    0 4px 9px rgba(37, 99, 235, 0.45);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -131,20 +135,20 @@ body {
 .app-logo-acronym {
   font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   color: #ffffff;
   text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.15),
-    0 0 4px rgba(255, 255, 255, 0.4);
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 0 3px rgba(255, 255, 255, 0.35);
 }
 
 .app-logo-module {
   font-size: 8px;
   font-weight: 600;
   margin-top: -1px;
-  color: rgba(255, 255, 255, 0.9);
-  letter-spacing: 0.16em;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+  color: rgba(226, 239, 255, 0.95);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 /* rest of header */
@@ -307,8 +311,11 @@ body {
   cursor: pointer;
   color: #4b5563;
   white-space: nowrap;
-  transition: background var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast), box-shadow var(--transition-fast),
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
     transform 0.06s ease;
 }
 
@@ -359,8 +366,11 @@ body {
   border-width: 1px;
   border-style: solid;
   background-clip: padding-box;
-  transition: background var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast), box-shadow var(--transition-fast),
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
     transform 0.06s ease;
 }
 
@@ -411,7 +421,9 @@ body {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  transition: background var(--transition-fast), transform 0.06s ease;
+  transition:
+    background var(--transition-fast),
+    transform 0.06s ease;
 }
 
 .icon-button:hover {
@@ -469,8 +481,11 @@ body {
   background: rgba(249, 250, 251, 0.9);
   font-size: 12px;
   position: relative;
-  transition: background var(--transition-fast), border-color var(--transition-fast),
-    box-shadow var(--transition-fast), transform var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform var(--transition-fast);
 }
 
 .slot-row.filled {
@@ -542,7 +557,7 @@ body {
   align-self: flex-start;
 }
 
-/* BADGES */
+/* BADGES – цветные и живые */
 
 .badge {
   font-size: 10px;
@@ -554,37 +569,80 @@ body {
   gap: 4px;
   text-transform: uppercase;
   letter-spacing: 0.06em;
+  border: 1px solid transparent;
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    border-color var(--transition-fast),
+    transform 0.06s ease;
 }
+
+/* SP4 – зелёный премиум */
 
 .badge-sp4 {
-  background: var(--sp4);
-  color: #f9fafb;
+  background: linear-gradient(135deg, #bbf7d0 0%, #22c55e 40%, #16a34a 100%);
+  color: #052e16;
+  border-color: rgba(22, 163, 74, 0.5);
+  box-shadow:
+    0 2px 6px rgba(22, 163, 74, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
 }
+
+/* SP3 – синий премиум */
 
 .badge-sp3 {
-  background: var(--sp3);
-  color: #f9fafb;
+  background: linear-gradient(135deg, #bfdbfe 0%, #3b82f6 40%, #1d4ed8 100%);
+  color: #0b1120;
+  border-color: rgba(37, 99, 235, 0.6);
+  box-shadow:
+    0 2px 6px rgba(37, 99, 235, 0.4),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
 }
 
+/* Нейтральный бейдж – T, категория */
+
 .badge-soft {
-  background: rgba(229, 231, 235, 0.9);
+  background: linear-gradient(135deg, #f9fafb 0%, #e5e7eb 100%);
   color: #374151;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 400;
+  border-color: rgba(209, 213, 219, 0.9);
+  box-shadow: 0 1px 3px rgba(148, 163, 184, 0.35);
 }
+
+/* Doppelhalter */
 
 .badge-tag {
-  background: rgba(191, 219, 254, 0.9);
-  color: #1d4ed8;
+  background: linear-gradient(135deg, #e0f2fe 0%, #93c5fd 45%, #60a5fa 100%);
+  color: #0b1120;
+  border-color: rgba(59, 130, 246, 0.6);
+  box-shadow:
+    0 2px 6px rgba(59, 130, 246, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
 }
 
+/* Имя инструмента в слотах */
+
 .badge-tool {
-  background: rgba(209, 213, 219, 0.7);
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);
   color: #111827;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 500;
+  border-color: rgba(148, 163, 184, 0.9);
+  box-shadow: 0 1px 4px rgba(148, 163, 184, 0.5);
+}
+
+/* Лёгкий hover для цветных бейджей */
+
+.badge-sp4:hover,
+.badge-sp3:hover,
+.badge-tag:hover,
+.badge-tool:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.35);
 }
 
 /* LIBRARY */
@@ -632,8 +690,12 @@ body {
   background: rgba(249, 250, 251, 0.95);
   color: #4b5563;
   cursor: pointer;
-  transition: background var(--transition-fast), border-color var(--transition-fast),
-    color var(--transition-fast), box-shadow var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    transform 0.06s ease;
 }
 
 .filter-pill.active {
@@ -642,6 +704,12 @@ body {
   color: #f9fafb;
   box-shadow: 0 4px 10px rgba(15, 23, 42, 0.24);
 }
+
+.filter-pill:hover {
+  transform: translateY(-1px);
+}
+
+/* карточки операций */
 
 .library-list {
   display: grid;
@@ -656,7 +724,7 @@ body {
 .op-card {
   border-radius: var(--radius-md);
   border: 1px solid rgba(226, 232, 240, 0.9);
-  background: rgba(249, 250, 251, 0.95);
+  background: rgba(249, 250, 251, 0.96);
   padding: 8px;
   font-size: 11px;
   display: flex;
@@ -664,14 +732,18 @@ body {
   gap: 4px;
   cursor: pointer;
   user-select: none;
-  transition: box-shadow var(--transition-fast), transform 0.06s ease,
-    background var(--transition-fast), border-color var(--transition-fast);
+  transition:
+    box-shadow var(--transition-fast),
+    transform 0.06s ease,
+    background var(--transition-fast),
+    border-color var(--transition-fast);
 }
 
 .op-card:hover {
   border-color: var(--border-strong);
   background: rgba(255, 255, 255, 0.98);
   box-shadow: var(--shadow-soft);
+  transform: translateY(-1px);
 }
 
 .op-card:active {
@@ -745,7 +817,9 @@ body {
   font-size: 11px;
   outline: none;
   background: rgba(249, 250, 251, 0.96);
-  transition: border-color var(--transition-fast), background var(--transition-fast),
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast),
     box-shadow var(--transition-fast);
 }
 
@@ -775,8 +849,11 @@ body {
   font-size: 11px;
   cursor: pointer;
   user-select: none;
-  transition: background var(--transition-fast), border-color var(--transition-fast),
-    box-shadow var(--transition-fast), color var(--transition-fast);
+  transition:
+    background var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
+    color var(--transition-fast);
 }
 
 .toggle-pill.active {
@@ -793,7 +870,9 @@ body {
   border: 2px solid #9ca3af;
   background: #f9fafb;
   box-sizing: border-box;
-  transition: border-color var(--transition-fast), background var(--transition-fast);
+  transition:
+    border-color var(--transition-fast),
+    background var(--transition-fast);
 }
 
 .toggle-pill.active .toggle-dot {
@@ -835,8 +914,11 @@ body {
   cursor: pointer;
   color: #4b5563;
   white-space: nowrap;
-  transition: background var(--transition-fast), color var(--transition-fast),
-    border-color var(--transition-fast), box-shadow var(--transition-fast),
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast),
+    box-shadow var(--transition-fast),
     transform 0.06s ease;
 }
 
@@ -922,7 +1004,7 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 160px;
+  max-width: 220px;
 }
 
 /* T-номер в PLAN – KANAL / SPINDEL после Lxxxx */
@@ -986,7 +1068,8 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: radial-gradient(circle at top left, #e0f2fe 0, #bfdbfe 40%, #93c5fd 100%);
+  background:
+    radial-gradient(circle at top left, #e0f2fe 0, #bfdbfe 40%, #93c5fd 100%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1089,7 +1172,6 @@ body {
     background: #ffffff;
   }
 
-  /* Увеличенный шрифт и отступы в таблице для A4 */
   .plan-table {
     font-size: 13px;
     min-width: 0;
