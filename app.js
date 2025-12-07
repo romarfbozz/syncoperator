@@ -1,5 +1,5 @@
 // app.js — мобильная версия CitiTool / SyncOperator
-// ВНИМАНИЕ: это цельный файл, без "find & replace"
+// ЦЕЛЫЙ ФАЙЛ, без "find & replace"
 
 /* ================== КОНСТАНТЫ И ДАННЫЕ ПО УМОЛЧАНИЮ ================== */
 
@@ -16,7 +16,7 @@ const SPINDLE_SP3 = "SP3";
 const PLAN_VIEW_PROGRAMMPLAN = "programmplan";
 const PLAN_VIEW_EINRICHTE = "einrichteblatt";
 
-/** Демо-операции (минимальный набор, дальше можешь расширить) */
+/** Демо-операции (минимальный набор, дальше можно расширить) */
 const DEFAULT_OPERATION_LIBRARY = [
   {
     id: "op-1",
@@ -62,12 +62,10 @@ let state = {
   currentKanal: 1,
   currentPlanView: PLAN_VIEW_PROGRAMMPLAN,
   programmplan: {
-    // массивы слотов по каналу
     kanal1: [],
     kanal2: []
   },
   operationLibrary: [],
-  // Einrichteblatt: тут можешь хранить произвольную структуру по инструментам
   werkzeuge: {
     kanal1: [],
     kanal2: []
@@ -77,6 +75,10 @@ let state = {
 // служебные переменные для модалок
 let currentEditingOperation = null; // {mode: 'library'|'slot'|'createForSlot', opId/slotId}
 let currentPickerTargetSlotId = null;
+
+// drag&drop
+let dragSlotId = null; // если тянем слот
+let dragOpId = null;   // если тянем операцию из библиотеки
 
 /* ================== УТИЛИТЫ ================== */
 
@@ -120,10 +122,8 @@ function loadState() {
     }
     const parsed = JSON.parse(raw);
 
-    // Переносим аккуратно, с дефолтами
     if (parsed.zeichnungsnummer) {
       if (typeof parsed.zeichnungsnummer === "string") {
-        // старый формат
         state.zeichnungsnummer = { nummer: parsed.zeichnungsnummer, name: "" };
       } else {
         state.zeichnungsnummer = {
@@ -257,12 +257,12 @@ function renderSlots() {
     row.appendChild(mainEl);
     row.appendChild(actionsEl);
 
-    // клик по строке = выбрать другую операцию
+    // клик по строке = Operation auswählen
     row.addEventListener("click", () => {
       openOperationPicker(slot.id);
     });
 
-    // drag&drop
+    // drag&drop слота
     row.addEventListener("dragstart", onSlotDragStart);
     row.addEventListener("dragover", onSlotDragOver);
     row.addEventListener("dragleave", onSlotDragLeave);
@@ -283,6 +283,7 @@ function renderSlots() {
       saveState();
       renderSlots();
       renderPlan();
+      // сразу открыть выбор операции
       openOperationPicker(newSlot.id);
     };
   }
@@ -312,13 +313,14 @@ function deleteSlot(slotId) {
   renderPlan();
 }
 
-/* ================== DRAG & DROP СЛОТОВ ================== */
-
-let dragSlotId = null;
+/* ================== DRAG & DROP СЛОТОВ + ОПЕРАЦИЙ ================== */
 
 function onSlotDragStart(e) {
-  dragSlotId = e.currentTarget.dataset.slotId;
+  const slotId = e.currentTarget.dataset.slotId;
+  dragSlotId = slotId;
+  dragOpId = null;
   e.dataTransfer.effectAllowed = "move";
+  e.dataTransfer.setData("text/slotId", slotId);
 }
 
 function onSlotDragOver(e) {
@@ -336,12 +338,51 @@ function onSlotDrop(e) {
   const targetRow = e.currentTarget;
   targetRow.classList.remove("drag-over");
   const targetSlotId = targetRow.dataset.slotId;
-  if (!dragSlotId || !targetSlotId || dragSlotId === targetSlotId) return;
+  if (!targetSlotId) return;
+
+  // если тянули операцию из библиотеки
+  if (dragOpId) {
+    const op = state.operationLibrary.find((o) => o.id === dragOpId);
+    if (!op) {
+      dragOpId = null;
+      return;
+    }
+    let arr = getCurrentKanalArray();
+    const idx = arr.findIndex((s) => s.id === targetSlotId);
+    if (idx === -1) {
+      dragOpId = null;
+      return;
+    }
+    arr[idx] = {
+      ...arr[idx],
+      name: op.name,
+      toolNo: op.toolNo,
+      spindle: op.spindle || SPINDLE_SP4,
+      category: op.category || "",
+      doppelhalter: !!op.doppelhalter
+    };
+    setCurrentKanalArray(arr);
+    saveState();
+    renderSlots();
+    renderPlan();
+    dragOpId = null;
+    dragSlotId = null;
+    return;
+  }
+
+  // если тянули слот (перестановка)
+  if (!dragSlotId || dragSlotId === targetSlotId) {
+    dragSlotId = null;
+    return;
+  }
 
   let arr = getCurrentKanalArray();
   const fromIndex = arr.findIndex((s) => s.id === dragSlotId);
   const toIndex = arr.findIndex((s) => s.id === targetSlotId);
-  if (fromIndex === -1 || toIndex === -1) return;
+  if (fromIndex === -1 || toIndex === -1) {
+    dragSlotId = null;
+    return;
+  }
 
   const [moved] = arr.splice(fromIndex, 1);
   arr.splice(toIndex, 0, moved);
@@ -350,6 +391,7 @@ function onSlotDrop(e) {
   saveState();
   renderSlots();
   renderPlan();
+  dragSlotId = null;
 }
 
 /* ================== PLAN – KANAL / SPINDEL ================== */
@@ -363,17 +405,14 @@ function renderPlan() {
 
   tbody.innerHTML = "";
 
-  // строим строки 1..PLAN_ROWS
   for (let rowIndex = 1; rowIndex <= PLAN_ROWS; rowIndex++) {
     const tr = document.createElement("tr");
 
-    // первый столбец – индекс строки
     const idxTd = document.createElement("td");
     idxTd.className = "plan-row-index";
     idxTd.textContent = String(rowIndex);
     tr.appendChild(idxTd);
 
-    // потом идёт 4 ячейки (например: Kanal1 SP4, Kanal1 SP3, Kanal2 SP3, Kanal2 SP4)
     const cellConfigs = [
       { kanal: 1, spindle: SPINDLE_SP4 },
       { kanal: 1, spindle: SPINDLE_SP3 },
@@ -388,7 +427,10 @@ function renderPlan() {
       const op = findOperationForPlanCell(cfg.kanal, cfg.spindle, rowIndex);
       if (op) {
         const lCode = computeLCode(cfg.kanal, rowIndex);
-        const text = `${op.name || "(ohne)"}  ${op.toolNo || ""}  ${lCode}`;
+        const name = op.name || "(ohne)";
+        const tool = op.toolNo || "";
+        // Формат: Name  T0101  L1115
+        const text = `${name}  ${tool}  ${lCode}`;
         td.textContent = text.trim();
       } else {
         td.textContent = "";
@@ -428,6 +470,7 @@ function renderOperationLibrary() {
     const card = document.createElement("div");
     card.className = "op-card";
     card.dataset.opId = op.id;
+    card.draggable = true;
 
     const title = document.createElement("div");
     title.className = "op-title";
@@ -465,51 +508,25 @@ function renderOperationLibrary() {
       meta.appendChild(badge);
     }
 
-    const editBtn = document.createElement("button");
-    editBtn.className = "icon-button subtle";
-    editBtn.innerHTML = "✎";
-    editBtn.title = "Operation bearbeiten";
-    editBtn.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openOperationEditorForLibrary(op.id);
-    });
-
     footer.appendChild(meta);
-    footer.appendChild(editBtn);
-
     card.appendChild(title);
     card.appendChild(footer);
 
-    // клик по карточке – добавить в текущий Programmplan в конец
+    // Клик по карточке – редактор (как написано в UI: "Klick für Editor")
     card.addEventListener("click", () => {
-      addOperationFromLibraryToProgrammplan(op.id);
+      openOperationEditorForLibrary(op.id);
+    });
+
+    // Drag&Drop из библиотеки в слот
+    card.addEventListener("dragstart", (e) => {
+      dragOpId = op.id;
+      dragSlotId = null;
+      e.dataTransfer.effectAllowed = "copyMove";
+      e.dataTransfer.setData("text/opId", op.id);
     });
 
     listEl.appendChild(card);
   });
-}
-
-function addOperationFromLibraryToProgrammplan(opId) {
-  const template = state.operationLibrary.find((o) => o.id === opId);
-  if (!template) return;
-
-  const arr = getCurrentKanalArray();
-  const newSlot = {
-    id: generateId("slot"),
-    kanal: state.currentKanal,
-    sequenceIndex: arr.length + 1,
-    name: template.name,
-    toolNo: template.toolNo,
-    spindle: template.spindle || SPINDLE_SP4,
-    category: template.category || "",
-    doppelhalter: !!template.doppelhalter
-  };
-
-  arr.push(newSlot);
-  setCurrentKanalArray(arr);
-  saveState();
-  renderSlots();
-  renderPlan();
 }
 
 /* ================== OPERATION EDITOR MODAL ================== */
@@ -637,7 +654,6 @@ function applyOperationEditorSave(updated) {
       renderPlan();
     }
   } else if (currentEditingOperation.mode === "createForSlot") {
-    // создаём новую операцию в библиотеке и в слоте
     const newOpId = generateId("op");
     const newOp = {
       id: newOpId,
@@ -871,10 +887,6 @@ function newZeichnungsnummerFlow() {
   state.programmplan = { kanal1: [], kanal2: [] };
   state.werkzeuge = { kanal1: [], kanal2: [] };
 
-  // библиотеку операций оставляем (чтобы не было совсем пусто),
-  // если хочешь — можешь тут тоже очищать
-  // state.operationLibrary = [];
-
   saveState();
   renderAll();
 }
@@ -929,7 +941,7 @@ function renderAll() {
 
 function initApp() {
   loadState();
-  // привязка кнопок
+
   const exportBtn = document.getElementById("exportJsonBtn");
   if (exportBtn) exportBtn.onclick = exportJson;
 
