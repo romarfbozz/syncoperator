@@ -925,6 +925,14 @@ body {
   max-width: 160px;
 }
 
+/* T-номер в PLAN – KANAL / SPINDEL после Lxxxx */
+
+.plan-tool-no {
+  font-size: 0.85em;
+  margin-left: 6px;
+  opacity: 0.85;
+}
+
 /* MODAL */
 
 .modal-overlay {
