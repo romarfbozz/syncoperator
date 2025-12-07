@@ -29,6 +29,15 @@ const state = {
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
 function getOperationById(id) {
   return state.library.find((op) => op.id === id) || null;
 }
@@ -54,21 +63,17 @@ function getDynamicLCode(kanal, rowNumber) {
   return prefix + suffix;
 }
 
-// Формат в слотах/плане: Name Txxxx L11xx / Name Txxxx L21xx
+// Формат в слотах/плане: Name L11xx / Name L21xx (T отдельно)
 function formatOperationLabelDynamic(op, kanal, rowNumber) {
   if (!op) return "";
   const dyn = getDynamicLCode(kanal, rowNumber);
   const title = (op.title || "").trim();
   const fallback = (op.code || "").trim();
-  const baseName = title || fallback;
-  const toolNo = (op.toolNo || "").trim();
-
-  const parts = [];
-  if (baseName) parts.push(baseName);
-  if (toolNo) parts.push(toolNo);
-  if (dyn) parts.push(dyn);
-
-  return parts.join(" ");
+  const name = title || fallback;
+  if (name && dyn) return `${name} ${dyn}`;
+  if (name) return name;
+  if (dyn) return dyn;
+  return "";
 }
 
 // ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
@@ -613,9 +618,9 @@ function openInfoModal() {
   const body = $("#modalBody");
   body.innerHTML = `
     <p class="text-muted">
-      • Operationen im Programmplan: Name L-Code + Werkzeugname.<br>
+      • Operationen im Programmplan: Name + dynamischer L-Code.<br>
       • Werkzeugdaten je Operation: Werkzeug-Nr. (T..) und Werkzeug-Name.<br>
-      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern).<br>
+      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern) oder neu anlegen.<br>
       • Umschalter unten: Programmplan ↔ Einrichteblatt (Werkzeugübersicht).<br>
       • L-Code im Plan: dynamisch nach Kanal und Zeile (L11xx / L21xx).
     </p>
@@ -842,7 +847,7 @@ function openDeleteOperationModal(opId) {
   body.innerHTML = `
     <p>
       Möchtest du die Operation<br>
-      <strong>${formatOperationLabel(op)}</strong><br>
+      <strong>${escapeHtml(formatOperationLabel(op))}</strong><br>
       wirklich löschen?
     </p>
   `;
@@ -1004,6 +1009,14 @@ function renderSlots() {
 
       const meta = document.createElement("div");
       meta.className = "slot-meta";
+
+      const toolNo = (op.toolNo || "").trim();
+      if (toolNo) {
+        const tBadge = document.createElement("span");
+        tBadge.className = "badge badge-soft";
+        tBadge.textContent = toolNo;
+        meta.appendChild(tBadge);
+      }
 
       const toolName = (op.toolName || "").trim();
       if (toolName) {
@@ -1706,6 +1719,14 @@ function renderPlan() {
   }
 }
 
+function buildPlanCellHtml(op, kanal, rowNumber) {
+  if (!op) return "";
+  const base = formatOperationLabelDynamic(op, kanal, rowNumber) || "";
+  const toolNo = (op.toolNo || "").trim();
+  if (!toolNo) return escapeHtml(base);
+  return `${escapeHtml(base)}<span class="plan-tool-no">${escapeHtml(toolNo)}</span>`;
+}
+
 function renderProgrammplan(table) {
   const slots1 = state.slots["1"];
   const slots2 = state.slots["2"];
@@ -1735,17 +1756,13 @@ function renderProgrammplan(table) {
     const op1 = op1Id ? getOperationById(op1Id) : null;
     const op2 = op2Id ? getOperationById(op2Id) : null;
 
-    const label1 = op1
-      ? formatOperationLabelDynamic(op1, "1", rowNumber)
-      : "";
-    const label2 = op2
-      ? formatOperationLabelDynamic(op2, "2", rowNumber)
-      : "";
+    const html1 = op1 ? buildPlanCellHtml(op1, "1", rowNumber) : "";
+    const html2 = op2 ? buildPlanCellHtml(op2, "2", rowNumber) : "";
 
-    const c1sp3 = op1 && op1.spindle === "SP3" ? label1 : "";
-    const c1sp4 = op1 && op1.spindle === "SP4" ? label1 : "";
-    const c2sp3 = op2 && op2.spindle === "SP3" ? label2 : "";
-    const c2sp4 = op2 && op2.spindle === "SP4" ? label2 : "";
+    const c1sp3 = op1 && op1.spindle === "SP3" ? html1 : "";
+    const c1sp4 = op1 && op1.spindle === "SP4" ? html1 : "";
+    const c2sp3 = op2 && op2.spindle === "SP3" ? html2 : "";
+    const c2sp4 = op2 && op2.spindle === "SP4" ? html2 : "";
 
     html += "<tr>";
     html += `<td class="plan-row-index">${rowNumber}</td>`;
@@ -1783,10 +1800,10 @@ function renderEinrichteblatt(table) {
       const t1 = row.oben ? row.toolNo : "";
       const t2 = row.unten ? row.toolNo : "";
       html += "<tr>";
-      html += `<td class="plan-row-index">${t1}</td>`;
-      html += `<td class="plan-cell">${row.oben || ""}</td>`;
-      html += `<td class="plan-row-index kanal-divider">${t2}</td>`;
-      html += `<td class="plan-cell">${row.unten || ""}</td>`;
+      html += `<td class="plan-row-index">${escapeHtml(t1)}</td>`;
+      html += `<td class="plan-cell">${escapeHtml(row.oben || "")}</td>`;
+      html += `<td class="plan-row-index kanal-divider">${escapeHtml(t2)}</td>`;
+      html += `<td class="plan-cell">${escapeHtml(row.unten || "")}</td>`;
       html += "</tr>";
     });
   }
