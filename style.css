@@ -8,8 +8,8 @@
   --text-soft: #9ca3af;
   --accent: #0f172a;
   --accent-soft: #e5e7eb;
-  --sp4: #22c55e;
-  --sp3: #1d4ed8;
+  --sp4: #16a34a;
+  --sp3: #2563eb;
   --danger: #ef4444;
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -85,33 +85,31 @@ body {
   gap: 12px;
 }
 
-/* PREMIUM LOGO – CT */
+/* LOGO – только CT, единый мягкий значок */
 
 .app-logo-mark {
-  width: 48px;
-  height: 48px;
-  border-radius: 16px;
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
   background:
-    radial-gradient(circle at 10% 0%, #eef3ff 0, #dce9ff 45%, #e8f3ff 100%);
+    linear-gradient(135deg, #e5f0ff 0%, #eff6ff 40%, #f9fafb 100%);
   box-shadow:
-    0 10px 22px rgba(15, 23, 42, 0.18),
-    0 0 0 1px rgba(145, 167, 206, 0.6),
-    inset 0 0 0 1.5px rgba(255, 255, 255, 0.9);
+    0 6px 14px rgba(15, 23, 42, 0.12),
+    0 0 0 1px rgba(148, 163, 184, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
-  backdrop-filter: blur(16px) saturate(1.4);
+  backdrop-filter: blur(14px) saturate(1.3);
 }
 
+/* превращаем ring+core в одну плоскую таблетку */
+
 .app-logo-ring {
-  width: 40px;
-  height: 40px;
-  border-radius: 14px;
-  background:
-    linear-gradient(135deg, #e9f1ff 0%, #f7fbff 70%);
-  box-shadow:
-    inset 0 0 0 1px rgba(181, 196, 220, 0.8),
-    0 3px 10px rgba(48, 72, 120, 0.16);
+  width: 34px;
+  height: 34px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #dbeafe 0%, #e5e7eb 100%);
+  box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,34 +119,31 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 10px;
-  background:
-    linear-gradient(145deg, #5aa8ff 0%, #408eff 45%, #2563eb 100%);
+  background: linear-gradient(145deg, #1d4ed8 0%, #2563eb 60%, #3b82f6 100%);
   box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-    0 4px 9px rgba(37, 99, 235, 0.45);
+    0 3px 6px rgba(30, 64, 175, 0.35),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
   display: flex;
-  flex-direction: column;
   align-items: center;
   justify-content: center;
 }
 
+/* только буквы CT */
+
 .app-logo-acronym {
   font-size: 15px;
   font-weight: 800;
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
   color: #ffffff;
   text-shadow:
     0 1px 2px rgba(0, 0, 0, 0.25),
     0 0 3px rgba(255, 255, 255, 0.35);
 }
 
+/* модуль снизу убираем полностью */
+
 .app-logo-module {
-  font-size: 8px;
-  font-weight: 600;
-  margin-top: -1px;
-  color: rgba(226, 239, 255, 0.95);
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
+  display: none;
 }
 
 /* rest of header */
@@ -557,7 +552,7 @@ body {
   align-self: flex-start;
 }
 
-/* BADGES – цветные и живые */
+/* BADGES – мягкие цвета, без кислотного эффекта */
 
 .badge {
   font-size: 10px;
@@ -578,26 +573,22 @@ body {
     transform 0.06s ease;
 }
 
-/* SP4 – зелёный премиум */
+/* SP4 – мягкий холодный зелёный */
 
 .badge-sp4 {
-  background: linear-gradient(135deg, #bbf7d0 0%, #22c55e 40%, #16a34a 100%);
-  color: #052e16;
-  border-color: rgba(22, 163, 74, 0.5);
-  box-shadow:
-    0 2px 6px rgba(22, 163, 74, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5);
+  background: linear-gradient(135deg, #e9fdf3 0%, #bbf7d0 50%, #a7f3d0 100%);
+  color: #065f46;
+  border-color: rgba(34, 197, 94, 0.35);
+  box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
 }
 
-/* SP3 – синий премиум */
+/* SP3 – мягкий пастельный синий */
 
 .badge-sp3 {
-  background: linear-gradient(135deg, #bfdbfe 0%, #3b82f6 40%, #1d4ed8 100%);
-  color: #0b1120;
-  border-color: rgba(37, 99, 235, 0.6);
-  box-shadow:
-    0 2px 6px rgba(37, 99, 235, 0.4),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.55);
+  background: linear-gradient(135deg, #e0f2ff 0%, #c7d2fe 45%, #bfdbfe 100%);
+  color: #1e3a8a;
+  border-color: rgba(59, 130, 246, 0.3);
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.22);
 }
 
 /* Нейтральный бейдж – T, категория */
@@ -609,40 +600,39 @@ body {
   letter-spacing: 0;
   font-weight: 400;
   border-color: rgba(209, 213, 219, 0.9);
-  box-shadow: 0 1px 3px rgba(148, 163, 184, 0.35);
+  box-shadow: 0 1px 2px rgba(148, 163, 184, 0.3);
 }
 
-/* Doppelhalter */
+/* Doppelhalter – легкий голубой */
 
 .badge-tag {
-  background: linear-gradient(135deg, #e0f2fe 0%, #93c5fd 45%, #60a5fa 100%);
-  color: #0b1120;
-  border-color: rgba(59, 130, 246, 0.6);
-  box-shadow:
-    0 2px 6px rgba(59, 130, 246, 0.35),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.6);
+  background: linear-gradient(135deg, #e5f2ff 0%, #dbeafe 50%, #bfdbfe 100%);
+  color: #1e3a8a;
+  border-color: rgba(96, 165, 250, 0.4);
+  box-shadow: 0 1px 3px rgba(59, 130, 246, 0.22);
 }
 
 /* Имя инструмента в слотах */
 
 .badge-tool {
-  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #d1d5db 100%);
+  background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 50%, #dde1e7 100%);
   color: #111827;
   text-transform: none;
   letter-spacing: 0;
   font-weight: 500;
-  border-color: rgba(148, 163, 184, 0.9);
-  box-shadow: 0 1px 4px rgba(148, 163, 184, 0.5);
+  border-color: rgba(148, 163, 184, 0.7);
+  box-shadow: 0 1px 3px rgba(148, 163, 184, 0.35);
 }
 
-/* Лёгкий hover для цветных бейджей */
+/* hover — лёгкое движение, без яркой подсветки */
 
 .badge-sp4:hover,
 .badge-sp3:hover,
 .badge-tag:hover,
-.badge-tool:hover {
+.badge-tool:hover,
+.badge-soft:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(15, 23, 42, 0.35);
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.18);
 }
 
 /* LIBRARY */
