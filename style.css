@@ -1039,28 +1039,7 @@ body {
   color: var(--danger);
 }
 
-/* ====== ДОБАВЛЕННЫЙ БЛОК ДЛЯ ДЕСКТОПА (>=1200px) ====== */
-
-@media (min-width: 1200px) {
-  .app-shell {
-    max-width: 1280px;
-    padding-inline: 40px;
-  }
-
-  .layout-main {
-    gap: 20px;
-  }
-
-  .plan-table-wrapper {
-    max-height: none;
-  }
-
-  .card {
-    padding: 16px 18px 20px;
-  }
-}
-
-/* PRINT (PDF EXPORT, DIN A4, mit Farben) */
+/* PRINT (PDF EXPORT, DIN A4, mit Farben, крупнее шрифт) */
 
 @media print {
   @page {
@@ -1100,6 +1079,22 @@ body {
   .plan-table-wrapper {
     border: none;
     background: #ffffff;
+  }
+
+  /* Увеличенный шрифт и отступы в таблице для A4 */
+  .plan-table {
+    font-size: 13px;
+    min-width: 0;
+  }
+
+  .plan-table th,
+  .plan-table td {
+    font-size: 13px;
+    padding: 6px 8px;
+  }
+
+  .plan-row-index {
+    font-size: 12px;
   }
 
   .plan-table,
