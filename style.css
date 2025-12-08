@@ -9,7 +9,7 @@
   --accent: #0f172a;
   --accent-soft: #e5e7eb;
   --sp4: #22c55e;
-  --sp3: #2563eb;
+  --sp3: #1d4ed8;
   --danger: #ef4444;
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -67,11 +67,7 @@ body {
   margin-bottom: 18px;
   padding: 10px 16px;
   border-radius: 20px;
-  background: radial-gradient(
-    circle at top left,
-    rgba(255, 255, 255, 0.96),
-    rgba(248, 250, 252, 0.9)
-  );
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.82));
   backdrop-filter: blur(20px) saturate(1.2);
   border: 1px solid rgba(148, 163, 184, 0.5);
   box-shadow:
@@ -85,44 +81,60 @@ body {
   gap: 12px;
 }
 
-/* PREMIUM LOGO – плоский CT */
+/* PREMIUM LOGO – CT */
 
 .app-logo-mark {
   width: 46px;
   height: 46px;
   border-radius: 14px;
-  background: rgba(248, 250, 252, 0.96);
-  border: 1px solid rgba(148, 163, 184, 0.9);
+  background:
+    linear-gradient(135deg, #eaf3ff 0%, #dcecff 40%, #e8f1ff 100%);
   box-shadow:
-    0 10px 24px rgba(15, 23, 42, 0.16),
-    0 0 0 1px rgba(255, 255, 255, 0.9) inset;
+    0 10px 22px rgba(15, 23, 42, 0.22),
+    0 0 0 1px rgba(139, 164, 205, 0.45),
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.95);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.app-logo-ring {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background:
+    linear-gradient(135deg, #e8f1ff 0%, #f8fbff 70%);
+  box-shadow:
+    inset 0 0 0 1px rgba(185, 197, 219, 0.75),
+    0 3px 12px rgba(48, 72, 120, 0.18);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.app-logo-ring,
 .app-logo-core {
-  width: 100%;
-  height: 100%;
-  border-radius: inherit;
-  background: transparent;
-  box-shadow: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  background:
+    linear-gradient(145deg, #87bfff 0%, #5aa6ff 45%, #4092ff 100%);
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
+    0 4px 10px rgba(46, 86, 153, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .app-logo-acronym {
-  font-size: 19px;
+  font-size: 17px;
   font-weight: 800;
   letter-spacing: 0.16em;
-  color: #0f172a;
-  text-shadow: none;
-}
-
-.app-logo-module {
-  display: none;
+  color: #ffffff;
+  text-shadow:
+    0 1px 2px rgba(0, 0, 0, 0.15),
+    0 0 4px rgba(255, 255, 255, 0.4);
 }
 
 /* rest of header */
@@ -524,51 +536,31 @@ body {
 
 .badge {
   font-size: 10px;
-  padding: 2px 8px;
+  padding: 2px 7px;
   border-radius: 999px;
   font-weight: 500;
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  text-transform: none;
-  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-/* спокойные SP-бейджи с маленьким цветным акцентом */
-
-.badge-sp4,
-.badge-sp3 {
-  position: relative;
-  padding-left: 12px;
-  background: rgba(243, 244, 246, 0.98);
-  color: #111827;
-  border: 1px solid rgba(148, 163, 184, 0.8);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
-}
-
-.badge-sp4::before,
-.badge-sp3::before {
-  content: "";
-  position: absolute;
-  left: 6px;
-  top: 50%;
-  width: 5px;
-  height: 5px;
-  border-radius: 999px;
-  transform: translateY(-50%);
-}
-
-.badge-sp4::before {
+.badge-sp4 {
   background: var(--sp4);
+  color: #f9fafb;
 }
 
-.badge-sp3::before {
+.badge-sp3 {
   background: var(--sp3);
+  color: #f9fafb;
 }
 
 .badge-soft {
   background: rgba(229, 231, 235, 0.9);
   color: #374151;
+  text-transform: none;
+  letter-spacing: 0;
   font-weight: 400;
 }
 
@@ -578,8 +570,10 @@ body {
 }
 
 .badge-tool {
-  background: rgba(209, 213, 219, 0.8);
+  background: rgba(209, 213, 219, 0.7);
   color: #111827;
+  text-transform: none;
+  letter-spacing: 0;
   font-weight: 500;
 }
 
@@ -907,7 +901,7 @@ body {
 }
 
 .plan-row-index {
-  width: 30px;
+  width: 26px;
   text-align: right;
   color: #9ca3af;
   font-size: 10px;
@@ -918,16 +912,16 @@ body {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 200px;
+  max-width: 160px;
 }
 
-/* T-номер в PLAN – меньший и мягкий */
+/* маленький Txxxx после Lxxxx в PLAN */
 
 .plan-toolno {
-  margin-left: 4px;
-  font-size: 0.85em;
-  color: var(--text-soft);
+  font-size: 10px;
   font-weight: 500;
+  color: #4b5563;
+  margin-left: 4px;
   white-space: nowrap;
 }
 
@@ -984,12 +978,7 @@ body {
   width: 30px;
   height: 30px;
   border-radius: 999px;
-  background: radial-gradient(
-    circle at top left,
-    #e0f2fe 0,
-    #bfdbfe 40%,
-    #93c5fd 100%
-  );
+  background: radial-gradient(circle at top left, #e0f2fe 0, #bfdbfe 40%, #93c5fd 100%);
   display: inline-flex;
   align-items: center;
   justify-content: center;
