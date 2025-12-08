@@ -54,7 +54,7 @@ function getDynamicLCode(kanal, rowNumber) {
   return prefix + suffix;
 }
 
-// Формат в слотах/плане: Name L11xx / Name L21xx (без T-номера)
+// Формат в слотах/плане (слоты): Name L11xx / Name L21xx
 function formatOperationLabelDynamic(op, kanal, rowNumber) {
   if (!op) return "";
   const dyn = getDynamicLCode(kanal, rowNumber);
@@ -67,20 +67,51 @@ function formatOperationLabelDynamic(op, kanal, rowNumber) {
   return "";
 }
 
-// Строка для PLAN – KANAL / SPINDEL с раздельным T
+// ---------- РАЗДЕЛЕНИЕ Lxxxx / Txxxx ДЛЯ PLAN --------------------------
+
+// Разделяем код на Lxxxx и Txxxx, если они слеплены в одну строку (L2101T0101)
+function splitLAndTFromCode(op) {
+  let raw = (op.code || "").trim();
+  let toolNo = (op.toolNo || "").trim();
+
+  // убираем пробелы внутри
+  const compact = raw.replace(/\s+/g, "");
+
+  // паттерн: LчислаTчисла → L2101T0101
+  const m = compact.match(/^(L\d+)(T\d+)$/i);
+  if (m) {
+    const lCode = m[1];
+    const tCode = toolNo || m[2]; // если toolNo пустой, берём T из кода
+    return { lCode, tCode };
+  }
+
+  // обычный случай: в коде только L, T лежит в toolNo
+  return {
+    lCode: raw || "",
+    tCode: toolNo || "",
+  };
+}
+
+// Строка для PLAN – KANAL / SPINDEL:
+// Name Lxxxx   (и отдельно Txxxx поменьше)
 function buildPlanCellHtml(op, kanal, rowNumber) {
   if (!op) return "";
-  const dynL = getDynamicLCode(kanal, rowNumber);
-  const name = (op.title || op.code || "").trim();
-  const toolNo = (op.toolNo || "").trim();
 
-  const mainText = [name, dynL].filter(Boolean).join(" ");
+  const name = (op.title || "").trim();
+  const { lCode, tCode } = splitLAndTFromCode(op);
 
-  if (!toolNo) {
+  const parts = [];
+  if (name) parts.push(name);
+  if (lCode) parts.push(lCode); // L2101, L1104 и т.п.
+
+  const mainText = parts.join(" ");
+
+  if (!tCode) {
     return mainText;
   }
 
-  return `${mainText} <span class="plan-toolno">${toolNo}</span>`;
+  // T-номер отдельным спаном, стилизуется через .plan-toolno
+  return `${mainText} <span class="plan-toolno">${tCode}</span>`;
 }
 
 // ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
@@ -284,32 +315,26 @@ const DEFAULT_DATA = {
     {
       id: "op_1",
       code: "L1101",
-      title: "A-Schrupen",
+      title: "Planen / Vordrehen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T0101",
-      toolName: "A-SR-80-0.4-L-1",
     },
     {
       id: "op_2",
       code: "L1103",
-      title: "Bohren D12x62",
+      title: "Bohren / Ausdrehen Ø20 Ø27 Ø32",
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T0303",
-      toolName: "Bohrer D12x6",
     },
     {
       id: "op_3",
       code: "L1102",
-      title: "A-Schlichten",
+      title: "Außen Schlichten",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T0202",
-      toolName: "A-SL-55-0.4-L-1",
     },
     {
       id: "op_4",
@@ -318,28 +343,22 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T0204",
-      toolName: "",
     },
     {
       id: "op_5",
       code: "L1105",
-      title: "I-Bohrung D13 VorDrehen",
+      title: "Lochkreis Bohren Radial Ø5",
       spindle: "SP4",
-      category: "Innen",
+      category: "Radial",
       doppelhalter: false,
-      toolNo: "T0404",
-      toolName: "",
     },
     {
       id: "op_6",
       code: "L0106",
-      title: "A–Stechen Nut d29x7",
+      title: "A–Nut Stechen Ø43",
       spindle: "SP3",
       category: "Radial",
       doppelhalter: false,
-      toolNo: "T0505",
-      toolName: "",
     },
     {
       id: "op_7",
@@ -348,18 +367,14 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Radial",
       doppelhalter: false,
-      toolNo: "T0606",
-      toolName: "",
     },
     {
       id: "op_8",
       code: "L1108",
-      title: "Gew.fräsen",
+      title: "6–Kant fräsen",
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T0707",
-      toolName: "",
     },
     {
       id: "op_9",
@@ -368,8 +383,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T0808",
-      toolName: "",
     },
     {
       id: "op_10",
@@ -378,8 +391,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Axial",
       doppelhalter: false,
-      toolNo: "T0909",
-      toolName: "",
     },
     {
       id: "op_11",
@@ -388,8 +399,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T11",
-      toolName: "",
     },
     {
       id: "op_12",
@@ -398,8 +407,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T12",
-      toolName: "",
     },
     {
       id: "op_13",
@@ -408,8 +415,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T13",
-      toolName: "",
     },
     {
       id: "op_14",
@@ -418,8 +423,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T14",
-      toolName: "",
     },
     {
       id: "op_15",
@@ -428,8 +431,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: true,
-      toolNo: "T15",
-      toolName: "",
     },
     {
       id: "op_16",
@@ -438,8 +439,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: true,
-      toolNo: "T16",
-      toolName: "",
     },
     {
       id: "op_17",
@@ -448,8 +447,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T17",
-      toolName: "",
     },
     {
       id: "op_18",
@@ -458,8 +455,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T18",
-      toolName: "",
     },
     {
       id: "op_19",
@@ -468,8 +463,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: true,
-      toolNo: "T19",
-      toolName: "",
     },
     {
       id: "op_20",
@@ -478,8 +471,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: true,
-      toolNo: "T20",
-      toolName: "",
     },
     {
       id: "op_21",
@@ -488,8 +479,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T21",
-      toolName: "",
     },
     {
       id: "op_22",
@@ -498,8 +487,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: true,
-      toolNo: "T22",
-      toolName: "",
     },
     {
       id: "op_23",
@@ -508,8 +495,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T23",
-      toolName: "",
     },
     {
       id: "op_24",
@@ -518,8 +503,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Radial",
       doppelhalter: false,
-      toolNo: "T24",
-      toolName: "",
     },
     {
       id: "op_25",
@@ -528,8 +511,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T25",
-      toolName: "",
     },
     {
       id: "op_26",
@@ -538,8 +519,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T26",
-      toolName: "",
     },
     {
       id: "op_27",
@@ -548,8 +527,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T27",
-      toolName: "",
     },
     {
       id: "op_28",
@@ -558,8 +535,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T28",
-      toolName: "",
     },
     {
       id: "op_29",
@@ -568,8 +543,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T29",
-      toolName: "",
     },
     {
       id: "op_30",
@@ -578,8 +551,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T30",
-      toolName: "",
     },
     {
       id: "op_31",
@@ -588,8 +559,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T31",
-      toolName: "",
     },
     {
       id: "op_32",
@@ -598,8 +567,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T32",
-      toolName: "",
     },
     {
       id: "op_33",
@@ -608,8 +575,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T33",
-      toolName: "",
     },
     {
       id: "op_34",
@@ -618,8 +583,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T34",
-      toolName: "",
     },
     {
       id: "op_35",
@@ -628,8 +591,6 @@ const DEFAULT_DATA = {
       spindle: "SP3",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T35",
-      toolName: "",
     },
     {
       id: "op_36",
@@ -638,8 +599,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Innen",
       doppelhalter: false,
-      toolNo: "T36",
-      toolName: "",
     },
     {
       id: "op_37",
@@ -648,8 +607,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Radial",
       doppelhalter: false,
-      toolNo: "T37",
-      toolName: "",
     },
     {
       id: "op_38",
@@ -658,8 +615,6 @@ const DEFAULT_DATA = {
       spindle: "SP4",
       category: "Außen",
       doppelhalter: false,
-      toolNo: "T38",
-      toolName: "",
     },
   ],
   nextOpId: 39,
@@ -701,11 +656,11 @@ function openInfoModal() {
   const body = $("#modalBody");
   body.innerHTML = `
     <p class="text-muted">
-      • Operationen im Programmplan: Name, dynamischer L-Code (L11xx / L21xx) und Werkzeugnummern.<br>
+      • Operationen im Programmplan: Name L-Code + Werkzeugname.<br>
       • Werkzeugdaten je Operation: Werkzeug-Nr. (T..) und Werkzeug-Name.<br>
-      • Klick auf leeren Slot: Operation aus Liste wählen oder neue Operation anlegen.<br>
+      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern).<br>
       • Umschalter unten: Programmplan ↔ Einrichteblatt (Werkzeugübersicht).<br>
-      • PDF-Export: PLAN – KANAL / SPINDEL als DIN A4 mit Farben.
+      • L-Code im Plan: dynamisch nach Kanal und Zeile (L11xx / L21xx).
     </p>
   `;
 
@@ -718,11 +673,9 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-// openOperationEditor с опциональным onSave
-function openOperationEditor(opId = null, options = {}) {
+function openOperationEditor(opId = null) {
   const isEdit = !!opId;
   const existing = isEdit ? getOperationById(opId) : null;
-  const onSave = typeof options.onSave === "function" ? options.onSave : null;
 
   if (isEdit && !existing) return;
 
@@ -776,8 +729,8 @@ function openOperationEditor(opId = null, options = {}) {
   const spindleSelect = document.createElement("select");
   spindleSelect.className = "field-select";
   spindleSelect.innerHTML = `
-    <option value="SP4">SP4</option>
-    <option value="SP3">SP3</option>
+    <option value="SP4">SP4 (grün)</option>
+    <option value="SP3">SP3 (blau)</option>
   `;
   spindleSelect.value = existing ? existing.spindle : "SP4";
   spindleGroup.append(spindleLabel, spindleSelect);
@@ -886,8 +839,6 @@ function openOperationEditor(opId = null, options = {}) {
     const toolNo = toolNoInput.value.trim();
     const toolName = toolNameInput.value.trim();
 
-    let savedId;
-
     if (isEdit) {
       existing.code = code;
       existing.title = title;
@@ -896,7 +847,6 @@ function openOperationEditor(opId = null, options = {}) {
       existing.doppelhalter = doppelhalter;
       existing.toolNo = toolNo;
       existing.toolName = toolName;
-      savedId = existing.id;
     } else {
       const newOp = {
         id: "op_" + state.nextOpId++,
@@ -909,7 +859,6 @@ function openOperationEditor(opId = null, options = {}) {
         toolName,
       };
       state.library.push(newOp);
-      savedId = newOp.id;
     }
 
     closeModal();
@@ -918,10 +867,6 @@ function openOperationEditor(opId = null, options = {}) {
     renderPlan();
     updatePlanViewSwitcherUI();
     touchState();
-
-    if (onSave) {
-      onSave(savedId);
-    }
   });
 
   footer.append(cancelBtn, saveBtn);
@@ -1102,14 +1047,6 @@ function renderSlots() {
 
       const meta = document.createElement("div");
       meta.className = "slot-meta";
-
-      const toolNo = (op.toolNo || "").trim();
-      if (toolNo) {
-        const badgeT = document.createElement("span");
-        badgeT.className = "badge badge-soft";
-        badgeT.textContent = toolNo;
-        meta.appendChild(badgeT);
-      }
 
       const toolName = (op.toolName || "").trim();
       if (toolName) {
@@ -1319,8 +1256,8 @@ function renderLibraryFilters() {
 
   const spindleOptions = [
     { value: "ALL", label: "Alle" },
-    { value: "SP4", label: "SP4" },
-    { value: "SP3", label: "SP3" },
+    { value: "SP4", label: "SP4 (grün)" },
+    { value: "SP3", label: "SP3 (blau)" },
   ];
 
   spindleOptions.forEach((opt) => {
@@ -1522,7 +1459,7 @@ function openSlotOperationPicker(slotIndex) {
   openModalBase({
     title: "Operation auswählen",
     description:
-      "Wähle eine Operation aus der Liste oder lege eine neue an.",
+      "Wähle eine Operation aus der Liste. Eigene Kategorie- und Spindel-Filter nur für diesen Slot.",
   });
 
   const body = $("#modalBody");
@@ -1562,8 +1499,8 @@ function openSlotOperationPicker(slotIndex) {
 
   const spindleOptions = [
     { value: "ALL", label: "Alle" },
-    { value: "SP4", label: "SP4" },
-    { value: "SP3", label: "SP3" },
+    { value: "SP4", label: "SP4 (grün)" },
+    { value: "SP3", label: "SP3 (blau)" },
   ];
 
   spindleOptions.forEach((opt) => {
@@ -1680,35 +1617,12 @@ function openSlotOperationPicker(slotIndex) {
   renderOpsList();
 
   const footer = $("#modalFooter");
-
   const cancelBtn = document.createElement("button");
   cancelBtn.type = "button";
   cancelBtn.className = "btn-outline";
   cancelBtn.textContent = "Abbrechen";
   cancelBtn.addEventListener("click", closeModal);
-
-  const newBtn = document.createElement("button");
-  newBtn.type = "button";
-  newBtn.className = "btn-primary";
-  newBtn.textContent = "Neue Operation anlegen";
-  newBtn.addEventListener("click", () => {
-    closeModal();
-    setTimeout(() => {
-      openOperationEditor(null, {
-        onSave: (newId) => {
-          if (!newId) return;
-          ensureSlotCount(state.currentKanal, slotIndex + 1);
-          state.slots[state.currentKanal][slotIndex] = newId;
-          renderSlots();
-          renderPlan();
-          updatePlanViewSwitcherUI();
-          touchState();
-        },
-      });
-    }, 30);
-  });
-
-  footer.append(cancelBtn, newBtn);
+  footer.appendChild(cancelBtn);
 }
 
 // ---------- PLAN VIEW SWITCHER -----------------------------------------
@@ -1801,9 +1715,13 @@ function buildEinrichteData() {
     const ta = a.toolNo || "";
     const tb = b.toolNo || "";
     const na =
-      ta[0] === "T" ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      ta[0] === "T"
+        ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER;
     const nb =
-      tb[0] === "T" ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+      tb[0] === "T"
+        ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER
+        : Number.MAX_SAFE_INTEGER;
     if (na !== nb) return na - nb;
     return ta.localeCompare(tb);
   });
@@ -1853,12 +1771,12 @@ function renderProgrammplan(table) {
     const op1 = op1Id ? getOperationById(op1Id) : null;
     const op2 = op2Id ? getOperationById(op2Id) : null;
 
-    const c1sp4 =
-      op1 && op1.spindle === "SP4"
-        ? buildPlanCellHtml(op1, "1", rowNumber)
-        : "";
     const c1sp3 =
       op1 && op1.spindle === "SP3"
+        ? buildPlanCellHtml(op1, "1", rowNumber)
+        : "";
+    const c1sp4 =
+      op1 && op1.spindle === "SP4"
         ? buildPlanCellHtml(op1, "1", rowNumber)
         : "";
     const c2sp3 =
@@ -1882,6 +1800,8 @@ function renderProgrammplan(table) {
   html += "</tbody>";
   table.innerHTML = html;
 }
+
+// *** EINRICHTEBLATT С ДВУМЯ T-СТОЛБЦАМИ ***
 
 function renderEinrichteblatt(table) {
   const data = buildEinrichteData();
