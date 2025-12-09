@@ -81,60 +81,35 @@ body {
   gap: 12px;
 }
 
-/* PREMIUM LOGO – CT */
+/* --------- NEW PREMIUM CT LOGO (без Sync, без двойных рамок) ---------- */
 
-.app-logo-mark {
-  width: 46px;
-  height: 46px;
-  border-radius: 14px;
+.app-logo-premium {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
   background:
-    linear-gradient(135deg, #eaf3ff 0%, #dcecff 40%, #e8f1ff 100%);
+    radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.98) 0, rgba(240, 249, 255, 0.8) 40%, rgba(210, 230, 255, 0.7) 100%);
   box-shadow:
     0 10px 22px rgba(15, 23, 42, 0.22),
-    0 0 0 1px rgba(139, 164, 205, 0.45),
-    inset 0 0 0 1.5px rgba(255, 255, 255, 0.95);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  backdrop-filter: blur(14px) saturate(1.4);
-}
-
-.app-logo-ring {
-  width: 40px;
-  height: 40px;
-  border-radius: 12px;
-  background:
-    linear-gradient(135deg, #e8f1ff 0%, #f8fbff 70%);
-  box-shadow:
-    inset 0 0 0 1px rgba(185, 197, 219, 0.75),
-    0 3px 12px rgba(48, 72, 120, 0.18);
+    inset 0 0 0 1.2px rgba(148, 163, 184, 0.65);
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.app-logo-core {
-  width: 32px;
-  height: 32px;
-  border-radius: 10px;
-  background:
-    linear-gradient(145deg, #87bfff 0%, #5aa6ff 45%, #4092ff 100%);
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.5),
-    0 4px 10px rgba(46, 86, 153, 0.35);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.app-logo-acronym {
-  font-size: 17px;
+.app-logo-premium span {
+  font-size: 18px;
   font-weight: 800;
   letter-spacing: 0.16em;
-  color: #ffffff;
+  text-transform: uppercase;
+  background: linear-gradient(145deg, #1e3a8a, #2563eb 40%, #60a5fa 90%);
+  -webkit-background-clip: text;
+  color: transparent;
   text-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.15),
-    0 0 4px rgba(255, 255, 255, 0.4);
+    0 2px 4px rgba(15, 23, 42, 0.35),
+    0 0 6px rgba(255, 255, 255, 0.7);
 }
 
 /* rest of header */
@@ -913,16 +888,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 160px;
-}
-
-/* маленький Txxxx после Lxxxx в PLAN */
-
-.plan-toolno {
-  font-size: 10px;
-  font-weight: 500;
-  color: #4b5563;
-  margin-left: 4px;
-  white-space: nowrap;
 }
 
 /* MODAL */
