@@ -8,8 +8,8 @@
   --text-soft: #9ca3af;
   --accent: #0f172a;
   --accent-soft: #e5e7eb;
-  --sp4: #22c55e;
-  --sp3: #1d4ed8;
+  --sp4: #38c9a6; /* мягкий мятный */
+  --sp3: #3b82f6; /* спокойный синий */
   --danger: #ef4444;
   --radius-lg: 18px;
   --radius-md: 12px;
@@ -67,7 +67,7 @@ body {
   margin-bottom: 18px;
   padding: 10px 16px;
   border-radius: 20px;
-  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.9), rgba(248, 250, 252, 0.82));
+  background: radial-gradient(circle at top left, rgba(255, 255, 255, 0.94), rgba(248, 250, 252, 0.9));
   backdrop-filter: blur(20px) saturate(1.2);
   border: 1px solid rgba(148, 163, 184, 0.5);
   box-shadow:
@@ -81,35 +81,69 @@ body {
   gap: 12px;
 }
 
-/* ---------- Премиум-логотип CT (одна стеклянная плитка) ---------- */
+/* PREMIUM LOGO – только C */
 
-.app-logo-premium {
-  width: 48px;
-  height: 48px;
+.app-logo-mark {
+  width: 44px;
+  height: 44px;
   border-radius: 16px;
   background:
-    radial-gradient(circle at 25% 20%, rgba(255, 255, 255, 0.98) 0, rgba(240, 249, 255, 0.86) 40%, rgba(210, 230, 255, 0.9) 100%);
+    radial-gradient(circle at 10% 0, rgba(191, 219, 254, 0.9), transparent 60%),
+    radial-gradient(circle at 90% 100%, rgba(167, 243, 208, 0.9), transparent 55%),
+    linear-gradient(135deg, #e5f3ff 0%, #dff7ff 40%, #e0f2ff 100%);
   box-shadow:
-    0 10px 22px rgba(15, 23, 42, 0.25),
-    inset 0 0 0 1.2px rgba(148, 163, 184, 0.7);
-  backdrop-filter: blur(16px) saturate(1.35);
-  -webkit-backdrop-filter: blur(16px) saturate(1.35);
+    0 10px 22px rgba(15, 23, 42, 0.2),
+    0 0 0 1px rgba(148, 163, 184, 0.45),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  backdrop-filter: blur(14px) saturate(1.4);
+}
+
+.app-logo-ring {
+  width: 32px;
+  height: 32px;
+  border-radius: 12px;
+  background: transparent;
+  box-shadow: none;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.app-logo-premium span {
-  font-size: 18px;
-  font-weight: 800;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
-  background: radial-gradient(circle at 20% 0, #60a5fa, #2563eb 45%, #1e3a8a 100%);
-  -webkit-background-clip: text;
-  color: transparent;
+.app-logo-core {
+  width: 32px;
+  height: 32px;
+  border-radius: 11px;
+  background: linear-gradient(145deg, #0f172a 0%, #1f2937 40%, #020617 100%);
+  box-shadow:
+    0 4px 10px rgba(15, 23, 42, 0.45),
+    inset 0 0 0 1px rgba(148, 163, 184, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+/* Сам знак C */
+
+.app-logo-core::before {
+  content: "C";
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #f9fafb;
   text-shadow:
-    0 2px 4px rgba(15, 23, 42, 0.4),
-    0 0 8px rgba(255, 255, 255, 0.9);
+    0 1px 2px rgba(0, 0, 0, 0.25),
+    0 0 4px rgba(255, 255, 255, 0.25);
+}
+
+/* Прячем старые CT / SYNC */
+
+.app-logo-acronym,
+.app-logo-module {
+  display: none;
 }
 
 /* rest of header */
@@ -144,11 +178,13 @@ body {
   gap: 16px;
 }
 
+/* Убираем PROJEKT блок */
+
 .app-meta {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
+  display: none;
 }
+
+/* (если понадобится мета позже — можно сделать отдельный блок) */
 
 .app-meta-label {
   font-size: 10px;
@@ -164,17 +200,14 @@ body {
 
 @media (max-width: 640px) {
   .app-header {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 12px;
   }
 
   .app-header-right {
-    justify-content: space-between;
-  }
-
-  .app-meta {
-    align-items: flex-start;
+    display: none;
   }
 }
 
@@ -522,13 +555,15 @@ body {
 }
 
 .badge-sp4 {
-  background: var(--sp4);
+  background: linear-gradient(135deg, rgba(56, 201, 166, 0.95), rgba(16, 185, 129, 0.95));
   color: #f9fafb;
+  box-shadow: 0 4px 10px rgba(16, 185, 129, 0.35);
 }
 
 .badge-sp3 {
-  background: var(--sp3);
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.95), rgba(37, 99, 235, 0.95));
   color: #f9fafb;
+  box-shadow: 0 4px 10px rgba(37, 99, 235, 0.35);
 }
 
 .badge-soft {
