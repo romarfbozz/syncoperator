@@ -54,7 +54,7 @@ function getDynamicLCode(kanal, rowNumber) {
   return prefix + suffix;
 }
 
-// Формат в слотах/плане (слоты): Name L11xx / Name L21xx
+// Формат в слотах/плане: Name L11xx / Name L21xx
 function formatOperationLabelDynamic(op, kanal, rowNumber) {
   if (!op) return "";
   const dyn = getDynamicLCode(kanal, rowNumber);
@@ -65,53 +65,6 @@ function formatOperationLabelDynamic(op, kanal, rowNumber) {
   if (name) return name;
   if (dyn) return dyn;
   return "";
-}
-
-// ---------- РАЗДЕЛЕНИЕ Lxxxx / Txxxx ДЛЯ PLAN --------------------------
-
-// Разделяем код на Lxxxx и Txxxx, если они слеплены в одну строку (L2101T0101)
-function splitLAndTFromCode(op) {
-  let raw = (op.code || "").trim();
-  let toolNo = (op.toolNo || "").trim();
-
-  // убираем пробелы внутри
-  const compact = raw.replace(/\s+/g, "");
-
-  // паттерн: LчислаTчисла → L2101T0101
-  const m = compact.match(/^(L\d+)(T\d+)$/i);
-  if (m) {
-    const lCode = m[1];
-    const tCode = toolNo || m[2]; // если toolNo пустой, берём T из кода
-    return { lCode, tCode };
-  }
-
-  // обычный случай: в коде только L, T лежит в toolNo
-  return {
-    lCode: raw || "",
-    tCode: toolNo || "",
-  };
-}
-
-// Строка для PLAN – KANAL / SPINDEL:
-// Name Lxxxx   (и отдельно Txxxx поменьше)
-function buildPlanCellHtml(op, kanal, rowNumber) {
-  if (!op) return "";
-
-  const name = (op.title || "").trim();
-  const { lCode, tCode } = splitLAndTFromCode(op);
-
-  const parts = [];
-  if (name) parts.push(name);
-  if (lCode) parts.push(lCode); // L2101, L1104 и т.п.
-
-  const mainText = parts.join(" ");
-
-  if (!tCode) {
-    return mainText;
-  }
-
-  // T-номер отдельным спаном, стилизуется через .plan-toolno
-  return `${mainText} <span class="plan-toolno">${tCode}</span>`;
 }
 
 // ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
@@ -658,7 +611,7 @@ function openInfoModal() {
     <p class="text-muted">
       • Operationen im Programmplan: Name L-Code + Werkzeugname.<br>
       • Werkzeugdaten je Operation: Werkzeug-Nr. (T..) und Werkzeug-Name.<br>
-      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern).<br>
+      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern) oder neue Operation anlegen.<br>
       • Umschalter unten: Programmplan ↔ Einrichteblatt (Werkzeugübersicht).<br>
       • L-Code im Plan: dynamisch nach Kanal und Zeile (L11xx / L21xx).
     </p>
@@ -673,7 +626,12 @@ function openInfoModal() {
   footer.appendChild(closeBtn);
 }
 
-function openOperationEditor(opId = null) {
+/**
+ * Operation-Editor
+ * @param {string|null} opId  - если есть, редактируем
+ * @param {{kanal: string, index: number}|null} assignToSlot - если создаём новую для конкретного слота
+ */
+function openOperationEditor(opId = null, assignToSlot = null) {
   const isEdit = !!opId;
   const existing = isEdit ? getOperationById(opId) : null;
 
@@ -859,6 +817,18 @@ function openOperationEditor(opId = null) {
         toolName,
       };
       state.library.push(newOp);
+
+      // если создаём операцию "из слота" — сразу положить её в этот слот
+      if (
+        assignToSlot &&
+        assignToSlot.kanal &&
+        typeof assignToSlot.index === "number"
+      ) {
+        const kanal = assignToSlot.kanal;
+        const idx = assignToSlot.index;
+        ensureSlotCount(kanal, idx + 1);
+        state.slots[kanal][idx] = newOp.id;
+      }
     }
 
     closeModal();
@@ -1392,7 +1362,7 @@ function applyLibraryCollapsedState() {
     toggleBtn.title = collapsed
       ? "OPERATION LIBRARY anzeigen"
       : "OPERATION LIBRARY ausblenden";
-    toggleBtn.innerHTML = collapsed ? "▸" : "▾";
+    toggleBtn.textContent = collapsed ? "▸" : "▾";
   }
 }
 
@@ -1459,7 +1429,7 @@ function openSlotOperationPicker(slotIndex) {
   openModalBase({
     title: "Operation auswählen",
     description:
-      "Wähle eine Operation aus der Liste. Eigene Kategorie- und Spindel-Filter nur für diesen Slot.",
+      "Wähle eine Operation aus der Liste oder lege eine neue an. Eigene Kategorie- und Spindel-Filter nur für diesen Slot.",
   });
 
   const body = $("#modalBody");
@@ -1622,7 +1592,22 @@ function openSlotOperationPicker(slotIndex) {
   cancelBtn.className = "btn-outline";
   cancelBtn.textContent = "Abbrechen";
   cancelBtn.addEventListener("click", closeModal);
-  footer.appendChild(cancelBtn);
+
+  const newBtn = document.createElement("button");
+  newBtn.type = "button";
+  newBtn.className = "btn-primary";
+  newBtn.textContent = "Neue Operation anlegen";
+  newBtn.addEventListener("click", () => {
+    // закрываем список и сразу открываем редактор,
+    // привязанный к текущему слоту / каналу
+    closeModal();
+    openOperationEditor(null, {
+      kanal: state.currentKanal,
+      index: slotIndex,
+    });
+  });
+
+  footer.append(cancelBtn, newBtn);
 }
 
 // ---------- PLAN VIEW SWITCHER -----------------------------------------
@@ -1706,7 +1691,7 @@ function buildEinrichteData() {
     }
   }
 
-  addFromKanal("1", true); // Revolver oben (Kanal 1)
+  addFromKanal("1", true);  // Revolver oben (Kanal 1)
   addFromKanal("2", false); // Revolver unten (Kanal 2)
 
   const arr = Object.values(map);
@@ -1715,13 +1700,9 @@ function buildEinrichteData() {
     const ta = a.toolNo || "";
     const tb = b.toolNo || "";
     const na =
-      ta[0] === "T"
-        ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER
-        : Number.MAX_SAFE_INTEGER;
+      ta[0] === "T" ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
     const nb =
-      tb[0] === "T"
-        ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER
-        : Number.MAX_SAFE_INTEGER;
+      tb[0] === "T" ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
     if (na !== nb) return na - nb;
     return ta.localeCompare(tb);
   });
@@ -1771,22 +1752,24 @@ function renderProgrammplan(table) {
     const op1 = op1Id ? getOperationById(op1Id) : null;
     const op2 = op2Id ? getOperationById(op2Id) : null;
 
-    const c1sp3 =
-      op1 && op1.spindle === "SP3"
-        ? buildPlanCellHtml(op1, "1", rowNumber)
-        : "";
-    const c1sp4 =
-      op1 && op1.spindle === "SP4"
-        ? buildPlanCellHtml(op1, "1", rowNumber)
-        : "";
-    const c2sp3 =
-      op2 && op2.spindle === "SP3"
-        ? buildPlanCellHtml(op2, "2", rowNumber)
-        : "";
-    const c2sp4 =
-      op2 && op2.spindle === "SP4"
-        ? buildPlanCellHtml(op2, "2", rowNumber)
-        : "";
+    const label1 = op1
+      ? formatOperationLabelDynamic(op1, "1", rowNumber)
+      : "";
+    const label2 = op2
+      ? formatOperationLabelDynamic(op2, "2", rowNumber)
+      : "";
+
+    // Добавляем T после Lxxxx, меньше размером через неразрывный пробел
+    const tool1 = op1 && op1.toolNo ? `\u00A0${op1.toolNo}` : "";
+    const tool2 = op2 && op2.toolNo ? `\u00A0${op2.toolNo}` : "";
+
+    const text1 = label1 ? `${label1}${tool1}` : "";
+    const text2 = label2 ? `${label2}${tool2}` : "";
+
+    const c1sp3 = op1 && op1.spindle === "SP3" ? text1 : "";
+    const c1sp4 = op1 && op1.spindle === "SP4" ? text1 : "";
+    const c2sp3 = op2 && op2.spindle === "SP3" ? text2 : "";
+    const c2sp4 = op2 && op2.spindle === "SP4" ? text2 : "";
 
     html += "<tr>";
     html += `<td class="plan-row-index">${rowNumber}</td>`;
@@ -1818,8 +1801,7 @@ function renderEinrichteblatt(table) {
   html += "<tbody>";
 
   if (!data.length) {
-    html +=
-      '<tr><td colspan="4" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
+    html += '<tr><td colspan="4" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
   } else {
     data.forEach((row) => {
       const t1 = row.oben ? row.toolNo : "";
