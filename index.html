@@ -1,157 +1,114 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="de">
   <head>
     <meta charset="UTF-8" />
-    <title>CitiTool · SyncOperator</title>
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link rel="stylesheet" href="style.css" />
+
+    <title>CitiTool</title>
+
+    <link rel="stylesheet" href="./style.css" />
+    <link rel="manifest" href="./manifest.json" />
+    <meta name="theme-color" content="#0f172a" />
+
+    <link rel="icon" type="image/svg+xml" href="./icons/icon.svg" />
+
+    <script defer src="./app.js"></script>
   </head>
+
   <body>
     <div class="app-shell">
-      <!-- HEADER -->
       <header class="app-header">
         <div class="app-header-left">
-          <!-- Новый премиум-логотип CT, без Sync -->
-          <div class="app-logo-premium">
-            <span>CT</span>
+          <div class="app-logo-mark" aria-label="CitiTool">
+            <div class="app-logo-core" aria-hidden="true"></div>
           </div>
 
           <div class="app-title-block">
             <div class="app-title-row">
-              <div class="app-title">CITITOOL</div>
+              <div class="app-title">CitiTool</div>
             </div>
-            <div class="app-subtitle">
-              SyncOperator Modul · Kanal / Spindel Planung
-            </div>
+            <div class="app-subtitle">SyncOperator</div>
           </div>
         </div>
 
         <div class="app-header-right">
-          <div class="app-meta">
-            <div class="app-meta-label">PROJEKT</div>
-            <div class="app-meta-value" id="projectName">WORKPIECE_1A</div>
-          </div>
+          <button id="exportPdfBtn" class="btn-outline btn-small" type="button">
+            Als PDF exportieren
+          </button>
+
+          <button id="exportJsonBtn" class="btn-outline btn-small" type="button">
+            Export JSON
+          </button>
+
+          <button id="importJsonBtn" class="btn-outline btn-small" type="button">
+            Import JSON
+          </button>
+
+          <input id="importFileInput" type="file" accept="application/json" style="display:none" />
+
+          <button id="infoButton" class="icon-button" type="button" title="Info">
+            <span class="icon-circle">i</span>
+          </button>
         </div>
       </header>
 
-      <!-- MAIN LAYOUT -->
       <main class="layout-main">
-        <!-- PROGRAMMPLAN -->
+        <!-- LEFT: Slots -->
         <section class="card slots-card">
           <div class="section-header">
             <div>
-              <div class="section-title">PROGRAMMPLAN</div>
+              <div class="section-title">Slots</div>
+              <div class="section-subtitle">Kanal 1/2 · Drag & Drop · Klick</div>
             </div>
           </div>
 
           <div class="kanal-switcher-wrapper">
-            <div id="kanalSwitcher" class="kanal-switcher">
-              <button
-                type="button"
-                class="kanal-option active"
-                data-kanal="1"
-              >
+            <div id="kanalSwitcher" class="kanal-switcher" role="tablist" aria-label="Kanal Umschalter">
+              <button class="kanal-option active" data-kanal="1" type="button">
                 <span class="kanal-label">Kanal 1</span>
                 <span class="kanal-chip">1000.MPF</span>
               </button>
-              <button
-                type="button"
-                class="kanal-option"
-                data-kanal="2"
-              >
+              <button class="kanal-option" data-kanal="2" type="button">
                 <span class="kanal-label">Kanal 2</span>
                 <span class="kanal-chip">2000.MPF</span>
               </button>
             </div>
           </div>
 
-          <div id="kanalHint" class="kanal-hint">
-            Revolver oben · Kanal 1
-          </div>
+          <div id="kanalHint" class="kanal-hint">Revolver oben · Kanal 1</div>
 
           <div id="slotList" class="slot-list"></div>
 
-          <button
-            id="addSlotBtn"
-            type="button"
-            class="btn-outline add-slot-btn"
-          >
-            <span class="btn-icon">+</span>
-            <span>Weitere Zeile</span>
-          </button>
+          <button id="addSlotBtn" class="btn-primary add-slot-btn" type="button">Slot hinzufügen</button>
         </section>
 
-        <!-- OPERATION LIBRARY -->
+        <!-- RIGHT: Operation Library -->
         <section class="card library-card">
           <div class="section-header">
             <div>
-              <div class="section-title">OPERATION LIBRARY</div>
-              <div class="section-subtitle">
-                Klick für Editor · Drag &amp; Drop in Slots
-              </div>
+              <div class="section-title">Operation Library</div>
+              <div class="section-subtitle">Filtern · Bearbeiten · Drag</div>
             </div>
             <div class="section-actions">
-              <button
-                id="infoButton"
-                class="icon-button subtle"
-                type="button"
-                aria-label="Info"
-              >
-                <span class="icon-circle">i</span>
-              </button>
+              <button id="addOpButton" class="btn-primary btn-small" type="button">Op hinzufügen</button>
             </div>
           </div>
 
           <div id="libraryFilters" class="library-filters"></div>
-
           <div id="libraryList" class="library-list"></div>
 
-          <div class="library-add">
-            <button
-              id="addOpButton"
-              type="button"
-              class="btn-primary"
-            >
-              <span class="btn-icon">+</span>
-              <span>Op hinzufügen</span>
-            </button>
-          </div>
+          <div class="library-add"></div>
         </section>
       </main>
 
-      <!-- PLAN – KANAL / SPINDEL -->
+      <!-- PLAN -->
       <section class="card plan-card">
         <div class="section-header">
           <div>
-            <div class="section-title">PLAN – KANAL / SPINDEL</div>
-            <div class="section-subtitle">
-              Kanal 1/2 · Spindel 3/4 · Reihenfolge 1…N
-            </div>
+            <div class="section-title">Plan – Kanal / Spindel</div>
+            <div class="section-subtitle">Programmplan · Einrichteblatt</div>
           </div>
-          <div class="section-actions">
-            <!-- Переключатель Programmplan / Einrichteblatt добавляется JS-ом -->
-            <button
-              id="importJsonBtn"
-              type="button"
-              class="btn-outline btn-small"
-            >
-              JSON Import
-            </button>
-            <button
-              id="exportJsonBtn"
-              type="button"
-              class="btn-outline btn-small"
-            >
-              JSON Export
-            </button>
-            <button
-              id="exportPdfBtn"
-              type="button"
-              class="btn-outline btn-small"
-            >
-              → Als PDF
-            </button>
-          </div>
+          <div class="section-actions"></div>
         </div>
 
         <div class="plan-table-wrapper">
@@ -160,56 +117,39 @@
       </section>
     </div>
 
-    <!-- HIDDEN FILE INPUT FOR JSON IMPORT -->
-    <input
-      type="file"
-      id="importFileInput"
-      accept="application/json"
-      style="display:none"
-    />
-
     <!-- MODAL -->
-    <div
-      id="modalOverlay"
-      class="modal-overlay"
-      aria-hidden="true"
-    >
+    <div id="modalOverlay" class="modal-overlay" aria-hidden="true">
       <div class="modal-backdrop"></div>
-      <div class="modal-dialog" role="dialog" aria-modal="true">
+
+      <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
         <div class="modal-header">
           <div class="modal-icon">
             <div class="modal-icon-circle">i</div>
           </div>
+
           <div class="modal-header-text">
             <div id="modalTitle" class="modal-title"></div>
-            <div
-              id="modalDescription"
-              class="modal-description"
-            ></div>
+            <div id="modalDescription" class="modal-description"></div>
           </div>
-          <button
-            id="modalCloseButton"
-            type="button"
-            class="icon-button"
-            aria-label="Schließen"
-          >
-            ✕
+
+          <button id="modalCloseButton" class="icon-button" type="button" title="Schließen">
+            <svg class="icon-svg"><use href="#icon-x"></use></svg>
           </button>
         </div>
+
         <div id="modalBody" class="modal-body"></div>
         <div id="modalFooter" class="modal-footer"></div>
       </div>
     </div>
 
-    <!-- SVG ICONS -->
-    <svg width="0" height="0" style="position:absolute;visibility:hidden">
+    <!-- ICONS -->
+    <svg width="0" height="0" style="position:absolute; left:-9999px; top:-9999px;">
       <symbol id="icon-trash" viewBox="0 0 24 24">
-        <path
-          d="M9 3h6a1 1 0 0 1 .99.86L16 4h4a1 1 0 1 1 0 2h-1.1l-1.2 13.2A2 2 0 0 1 15.71 21H8.29a2 2 0 0 1-1.99-1.8L5.1 6H4a1 1 0 1 1 0-2h4l.01-.14A1 1 0 0 1 9 3zm6.9 3H8.1l1.1 13h5.6l1.1-13zM10 8a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1zm4 0a1 1 0 0 1 1 1v7a1 1 0 1 1-2 0V9a1 1 0 0 1 1-1z"
-        />
+        <path fill="currentColor" d="M9 3h6l1 2h4v2H4V5h4l1-2zm1 6h2v10h-2V9zm4 0h2v10h-2V9zM6 9h2v10H6V9z"/>
+      </symbol>
+      <symbol id="icon-x" viewBox="0 0 24 24">
+        <path fill="currentColor" d="M18.3 5.7a1 1 0 0 0-1.4 0L12 10.6 7.1 5.7A1 1 0 0 0 5.7 7.1L10.6 12l-4.9 4.9a1 1 0 1 0 1.4 1.4l4.9-4.9 4.9 4.9a1 1 0 0 0 1.4-1.4L13.4 12l4.9-4.9a1 1 0 0 0 0-1.4z"/>
       </symbol>
     </svg>
-
-    <script src="app.js"></script>
   </body>
 </html>
