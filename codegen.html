@@ -1,0 +1,94 @@
+<!-- codegen.html -->
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>CitiTool · CodeGen</title>
+    <link rel="stylesheet" href="./codegen.css" />
+  </head>
+  <body>
+    <div class="cg-app">
+      <header class="cg-header">
+        <div class="cg-brand">
+          <div class="cg-logo" aria-hidden="true">
+            <svg viewBox="0 0 64 64" class="cg-logo-svg" role="img" aria-label="C">
+              <!-- stylized C (single letter, no text) -->
+              <path
+                d="M40.8 12.2c-7.6 0-14.4 3.4-18.9 8.7-4.5 5.3-6.4 12.4-5 19.2 1.9 9.6 10.6 16.7 20.8 16.7 5.7 0 10.7-1.8 14.7-5.1l-3.2-4.1c-3 2.4-6.6 3.6-10.8 3.6-7.6 0-13.9-5.2-15.3-12.6-1-4.9.4-10 3.7-13.9 3.4-3.9 8.4-6.3 13.9-6.3 4.3 0 7.9 1.2 10.8 3.6l3.2-4.1c-4-3.3-9-5.1-14.7-5.1Z"
+                fill="currentColor"
+              />
+              <path
+                d="M49.5 20.6c-2.6-1.9-5.6-2.8-9.1-2.8-4.4 0-8.3 1.9-11.1 5.1-2.8 3.2-3.9 7.5-3.1 11.6 1.1 5.6 6.1 9.7 12.1 9.7 3.6 0 6.6-.9 9.2-2.8l-2.4-3.1c-1.8 1.2-3.8 1.7-6.2 1.7-3.4 0-6.3-2.3-6.9-5.7-.4-2.2.2-4.4 1.6-6.1 1.5-1.7 3.7-2.8 6.2-2.8 2.3 0 4.4.6 6.2 1.7l2.3-3.2Z"
+                fill="currentColor"
+                opacity="0.35"
+              />
+            </svg>
+          </div>
+
+          <div class="cg-brand-text">
+            <div class="cg-title">CitiTool</div>
+            <div class="cg-subtitle">CodeGen Modul · MPF Strukturansicht</div>
+          </div>
+        </div>
+
+        <div class="cg-top-actions">
+          <button id="cgCopyBtn" class="cg-btn cg-btn-ghost" type="button" title="Ansicht als Text kopieren">
+            <span class="cg-btn-ico" aria-hidden="true">⧉</span>
+            <span>Copy</span>
+          </button>
+        </div>
+      </header>
+
+      <main class="cg-main">
+        <section class="cg-card">
+          <div class="cg-card-head">
+            <div class="cg-card-left">
+              <div class="cg-card-title">Mehrkanaldaten</div>
+              <div class="cg-card-meta">Kanal 1 / Kanal 2 · Gruppen &amp; Zeilen</div>
+            </div>
+
+            <div class="cg-switch">
+              <button class="cg-switch-pill is-active" type="button" data-mpf="1000">1000.MPF</button>
+              <button class="cg-switch-pill" type="button" data-mpf="2000">2000.MPF</button>
+            </div>
+          </div>
+
+          <div class="cg-split">
+            <aside class="cg-pane cg-pane-left">
+              <div class="cg-pane-head">
+                <div class="cg-pane-title">
+                  <span class="cg-dot cg-dot-k1" aria-hidden="true"></span>
+                  <span>Kanal 1</span>
+                </div>
+                <div class="cg-pane-hint" id="cgPaneHintLeft">1000.MPF</div>
+              </div>
+              <div class="cg-list" id="cgListLeft"></div>
+            </aside>
+
+            <div class="cg-divider" aria-hidden="true"></div>
+
+            <aside class="cg-pane cg-pane-right">
+              <div class="cg-pane-head">
+                <div class="cg-pane-title">
+                  <span class="cg-dot cg-dot-k2" aria-hidden="true"></span>
+                  <span>Kanal 2</span>
+                </div>
+                <div class="cg-pane-hint" id="cgPaneHintRight">2000.MPF</div>
+              </div>
+              <div class="cg-list" id="cgListRight"></div>
+            </aside>
+          </div>
+
+          <div class="cg-footer">
+            <div class="cg-foot-note">
+              Demo-Ansicht (noch ohne echten Parser). Nächster Schritt: MPF laden → Gruppen automatisch erzeugen.
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./codegen.js"></script>
+  </body>
+</html>
