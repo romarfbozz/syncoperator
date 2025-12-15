@@ -1,0 +1,10 @@
+{
+  "name": "CitiTool",
+  "short_name": "CitiTool",
+  "description": "CitiTool – SyncOperator Modul · Kanal / Spindel Planung",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#0f172a"
+}
