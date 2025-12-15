@@ -1,39 +1,38 @@
 // app.js
 
-// ---------- STATE -------------------------------------------------------
-
 const MIN_SLOTS = 5;
 const STORAGE_KEY = "CitiTool_SyncOperator_v1";
 
 const state = {
   currentKanal: "1",
-  slots: {
-    "1": Array(MIN_SLOTS).fill(null),
-    "2": Array(MIN_SLOTS).fill(null),
-  },
-  // operations: {id, code, title, spindle, category, doppelhalter, toolNo, toolName}
+  slots: { "1": Array(MIN_SLOTS).fill(null), "2": Array(MIN_SLOTS).fill(null) },
   library: [],
   categories: ["Alle", "Außen", "Innen", "Radial", "Axial"],
   activeCategory: "Alle",
   spindleFilter: "ALL", // ALL | SP3 | SP4
   nextOpId: 1,
-  // локальные фильтры только для модалки пустого слота
   slotPickerCategory: "Alle",
   slotPickerSpindle: "ALL",
-  // режим нижнего блока
   planViewMode: "PLAN", // PLAN | EINRICHTE
-  // свернуть / развернуть OPERATION LIBRARY
   libraryCollapsed: false,
 };
 
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
 
+function escapeHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 function getOperationById(id) {
   return state.library.find((op) => op.id === id) || null;
 }
 
-// Базовый формат: Name L-Code
 function formatOperationLabel(op) {
   if (!op) return "";
   const title = (op.title || "").trim();
@@ -42,33 +41,49 @@ function formatOperationLabel(op) {
   return title || code || "";
 }
 
-// ---------- ДИНАМИЧЕСКИЙ L-КОД -----------------------------------------
+/* PWA */
+function initPWA() {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+    });
+  }
+}
 
+/* Dynamic L */
 function getDynamicLCode(kanal, rowNumber) {
   const n = Math.max(1, rowNumber | 0);
   const suffix = String(n).padStart(2, "0");
-  let prefix;
-  if (kanal === "1") prefix = "L11";
-  else if (kanal === "2") prefix = "L21";
-  else return null;
-  return prefix + suffix;
+  if (kanal === "1") return "L11" + suffix;
+  if (kanal === "2") return "L21" + suffix;
+  return null;
 }
 
-// Формат в слотах/плане: Name L11xx / Name L21xx
-function formatOperationLabelDynamic(op, kanal, rowNumber) {
-  if (!op) return "";
-  const dyn = getDynamicLCode(kanal, rowNumber);
+function formatOperationName(op) {
   const title = (op.title || "").trim();
   const fallback = (op.code || "").trim();
-  const name = title || fallback;
-  if (name && dyn) return `${name} ${dyn}`;
-  if (name) return name;
-  if (dyn) return dyn;
-  return "";
+  return title || fallback || "";
 }
 
-// ---------- LOCAL STORAGE / EXPORT / IMPORT -----------------------------
+function formatPlanCellHtml(op, kanal, rowNumber) {
+  if (!op) return "";
+  const name = escapeHtml(formatOperationName(op));
+  const l = escapeHtml(getDynamicLCode(kanal, rowNumber) || "");
+  const t = escapeHtml((op.toolNo || "").trim());
 
+  let html = name;
+  if (l) html += ` <span class="plan-l">${l}</span>`;
+  if (t) html += ` <span class="plan-t">${t}</span>`;
+  return html;
+}
+
+function formatSlotTitleText(op, kanal, rowNumber) {
+  const name = formatOperationName(op);
+  const l = getDynamicLCode(kanal, rowNumber);
+  return l ? `${name} ${l}` : name;
+}
+
+/* Local storage / import export */
 function getSerializableState() {
   return {
     currentKanal: state.currentKanal,
@@ -88,9 +103,7 @@ function normalizeOperation(op) {
     code: op.code || "",
     title: op.title || "",
     spindle: op.spindle === "SP3" ? "SP3" : "SP4",
-    category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category)
-      ? op.category
-      : "Außen",
+    category: ["Außen", "Innen", "Radial", "Axial"].includes(op.category) ? op.category : "Außen",
     doppelhalter: !!op.doppelhalter,
     toolNo: op.toolNo || "",
     toolName: op.toolName || "",
@@ -99,6 +112,7 @@ function normalizeOperation(op) {
 
 function applyLoadedState(raw) {
   if (!raw || typeof raw !== "object") return false;
+
   const slots = raw.slots || {};
   const lib = Array.isArray(raw.library) ? raw.library : [];
 
@@ -108,9 +122,7 @@ function applyLoadedState(raw) {
   };
 
   ["1", "2"].forEach((k) => {
-    while (newSlots[k].length < MIN_SLOTS) {
-      newSlots[k].push(null);
-    }
+    while (newSlots[k].length < MIN_SLOTS) newSlots[k].push(null);
   });
 
   const newLib = lib.map(normalizeOperation);
@@ -118,16 +130,10 @@ function applyLoadedState(raw) {
   state.currentKanal = raw.currentKanal === "2" ? "2" : "1";
   state.slots = newSlots;
   state.library = newLib;
-  state.nextOpId =
-    typeof raw.nextOpId === "number" && raw.nextOpId > 0
-      ? raw.nextOpId
-      : newLib.length + 1;
+  state.nextOpId = typeof raw.nextOpId === "number" && raw.nextOpId > 0 ? raw.nextOpId : newLib.length + 1;
   state.activeCategory = raw.activeCategory || "Alle";
   state.spindleFilter = raw.spindleFilter || "ALL";
-  state.planViewMode =
-    raw.planViewMode === "EINRICHTE" || raw.planViewMode === "PLAN"
-      ? raw.planViewMode
-      : "PLAN";
+  state.planViewMode = raw.planViewMode === "EINRICHTE" ? "EINRICHTE" : "PLAN";
   state.libraryCollapsed = !!raw.libraryCollapsed;
 
   return true;
@@ -135,11 +141,7 @@ function applyLoadedState(raw) {
 
 function saveToLocal() {
   try {
-    const payload = {
-      version: 3,
-      data: getSerializableState(),
-    };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(payload));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ version: 3, data: getSerializableState() }));
   } catch (_) {}
 }
 
@@ -148,7 +150,7 @@ function loadFromLocal() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return false;
     const parsed = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object" || !parsed.data) return false;
+    if (!parsed || !parsed.data) return false;
     return applyLoadedState(parsed.data);
   } catch (_) {
     return false;
@@ -160,11 +162,7 @@ function touchState() {
 }
 
 function exportStateToFile() {
-  const payload = {
-    version: 3,
-    exportedAt: new Date().toISOString(),
-    data: getSerializableState(),
-  };
+  const payload = { version: 3, exportedAt: new Date().toISOString(), data: getSerializableState() };
   const json = JSON.stringify(payload, null, 2);
   const blob = new Blob([json], { type: "application/json" });
   const url = URL.createObjectURL(blob);
@@ -184,11 +182,7 @@ function initJsonExportImport() {
   const importBtn = $("#importJsonBtn");
   const fileInput = $("#importFileInput");
 
-  if (exportBtn) {
-    exportBtn.addEventListener("click", () => {
-      exportStateToFile();
-    });
-  }
+  if (exportBtn) exportBtn.addEventListener("click", exportStateToFile);
 
   if (importBtn && fileInput) {
     importBtn.addEventListener("click", () => {
@@ -199,20 +193,15 @@ function initJsonExportImport() {
     fileInput.addEventListener("change", (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = (ev) => {
         try {
-          const text = ev.target.result;
-          const parsed = JSON.parse(text);
+          const parsed = JSON.parse(ev.target.result);
           const data = parsed && parsed.data ? parsed.data : parsed;
           if (!applyLoadedState(data)) return;
           touchState();
-          renderSlots();
-          renderLibraryFilters();
-          renderLibraryList();
-          applyLibraryCollapsedState();
-          renderPlan();
-          updatePlanViewSwitcherUI();
+          renderAll();
         } catch (_) {}
       };
       reader.readAsText(file);
@@ -220,365 +209,57 @@ function initJsonExportImport() {
   }
 }
 
-// ---------- DEFAULT DATA ------------------------------------------------
-
+/* DEFAULT DATA */
 const DEFAULT_DATA = {
   currentKanal: "2",
   slots: {
-    "1": [
-      "op_1",
-      "op_3",
-      "op_2",
-      "op_26",
-      "op_28",
-      "op_27",
-      "op_5",
-      "op_8",
-      "op_25",
-      "op_14",
-      "op_36",
-      "op_9",
-      "op_4",
-      "op_30",
-      "op_31",
-      "op_27",
-      "op_10",
-    ],
-    "2": [
-      "op_11",
-      "op_12",
-      "op_13",
-      "op_21",
-      "op_18",
-      "op_22",
-      "op_16",
-      "op_20",
-      "op_32",
-      "op_33",
-      "op_34",
-      "op_35",
-      null,
-      "op_37",
-      "op_19",
-      "op_15",
-      null,
-    ],
+    "1": ["op_1","op_3","op_2","op_26","op_28","op_27","op_5","op_8","op_25","op_14","op_36","op_9","op_4","op_30","op_31","op_27","op_10"],
+    "2": ["op_11","op_12","op_13","op_21","op_18","op_22","op_16","op_20","op_32","op_33","op_34","op_35",null,"op_37","op_19","op_15",null]
   },
   library: [
-    {
-      id: "op_1",
-      code: "L1101",
-      title: "Planen / Vordrehen",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_2",
-      code: "L1103",
-      title: "Bohren / Ausdrehen Ø20 Ø27 Ø32",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_3",
-      code: "L1102",
-      title: "Außen Schlichten",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_4",
-      code: "L1113",
-      title: "I–Gewinde M26×1",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_5",
-      code: "L1105",
-      title: "Lochkreis Bohren Radial Ø5",
-      spindle: "SP4",
-      category: "Radial",
-      doppelhalter: false,
-    },
-    {
-      id: "op_6",
-      code: "L0106",
-      title: "A–Nut Stechen Ø43",
-      spindle: "SP3",
-      category: "Radial",
-      doppelhalter: false,
-    },
-    {
-      id: "op_7",
-      code: "L0107",
-      title: "Lochkreis Entgr. mit Senker Ø6",
-      spindle: "SP3",
-      category: "Radial",
-      doppelhalter: false,
-    },
-    {
-      id: "op_8",
-      code: "L1108",
-      title: "6–Kant fräsen",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_9",
-      code: "L1112",
-      title: "I–Nut 2×Ø17.9 FertigStechen",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_10",
-      code: "L1117",
-      title: "Y-Abstechen",
-      spindle: "SP4",
-      category: "Axial",
-      doppelhalter: false,
-    },
-    {
-      id: "op_11",
-      code: "L2101",
-      title: "A– Planen / Vordrehen",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_12",
-      code: "L2102",
-      title: "A– Schlichten",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_13",
-      code: "L2103",
-      title: "I– Freistich Ø16 stechen",
-      spindle: "SP3",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_14",
-      code: "L1110",
-      title: "I– Bohrung Ø13 – Fertig drehen",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_15",
-      code: "L2116",
-      title: "I– Bohrungen Ø5 Bürsten",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: true,
-    },
-    {
-      id: "op_16",
-      code: "L2107",
-      title: "A–Gewinde M40 × 1.5",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: true,
-    },
-    {
-      id: "op_17",
-      code: "L0207",
-      title: "A– Gew – Entgraten / Fräsen",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_18",
-      code: "L2105",
-      title: "A– Bohrungen Ø5 Bürsten",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_19",
-      code: "L2115",
-      title: "A– Gew. Gang Wegfräsen",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: true,
-    },
-    {
-      id: "op_20",
-      code: "L2108",
-      title: "A– Gew. Gang Wegfräsen",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: true,
-    },
-    {
-      id: "op_21",
-      code: "L2104",
-      title: "I– Bohren Ø12.5",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_22",
-      code: "L2106",
-      title: "A_Gewinde_M40×2",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: true,
-    },
-    {
-      id: "op_23",
-      code: "L1101",
-      title: "Außen Schruppen",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_24",
-      code: "L2101",
-      title: "Einstechen",
-      spindle: "SP3",
-      category: "Radial",
-      doppelhalter: false,
-    },
-    {
-      id: "op_25",
-      code: "L1109",
-      title: "Bohrungen Ø20 Ø27 Ø32 FertigDrehen",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_26",
-      code: "L1104",
-      title: "N_O_P",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_27",
-      code: "L1106",
-      title: "N_O_P",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_28",
-      code: "L1107",
-      title: "Nute 2xd43 Stechen",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_29",
-      code: "L2115",
-      title: "N_O_P",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_30",
-      code: "L1113",
-      title: "N_O_P",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_31",
-      code: "L1114",
-      title: "N_O_P",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_32",
-      code: "L2109",
-      title: "N_O_P",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_33",
-      code: "L2110",
-      title: "N_O_P",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_34",
-      code: "L2111",
-      title: "N_O_P",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_35",
-      code: "L2112",
-      title: "N_O_P",
-      spindle: "SP3",
-      category: "Außen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_36",
-      code: "L1111",
-      title: "I-Nut 2xØ17.9 Vorstechen",
-      spindle: "SP4",
-      category: "Innen",
-      doppelhalter: false,
-    },
-    {
-      id: "op_37",
-      code: "L2114",
-      title: "Senker_Lochkreis_Ø5_Entgraten",
-      spindle: "SP4",
-      category: "Radial",
-      doppelhalter: false,
-    },
-    {
-      id: "op_38",
-      code: "L1116",
-      title: "N_O_P",
-      spindle: "SP4",
-      category: "Außen",
-      doppelhalter: false,
-    },
+    { id:"op_1", code:"L1101", title:"Planen / Vordrehen", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_2", code:"L1103", title:"Bohren / Ausdrehen Ø20 Ø27 Ø32", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_3", code:"L1102", title:"Außen Schlichten", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_4", code:"L1113", title:"I–Gewinde M26×1", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_5", code:"L1105", title:"Lochkreis Bohren Radial Ø5", spindle:"SP4", category:"Radial", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_6", code:"L0106", title:"A–Nut Stechen Ø43", spindle:"SP3", category:"Radial", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_7", code:"L0107", title:"Lochkreis Entgr. mit Senker Ø6", spindle:"SP3", category:"Radial", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_8", code:"L1108", title:"6–Kant fräsen", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_9", code:"L1112", title:"I–Nut 2×Ø17.9 FertigStechen", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_10", code:"L1117", title:"Y-Abstechen", spindle:"SP4", category:"Axial", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_11", code:"L2101", title:"A– Planen / Vordrehen", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_12", code:"L2102", title:"A– Schlichten", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_13", code:"L2103", title:"I– Freistich Ø16 stechen", spindle:"SP3", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_14", code:"L1110", title:"I– Bohrung Ø13 – Fertig drehen", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_15", code:"L2116", title:"I– Bohrungen Ø5 Bürsten", spindle:"SP4", category:"Innen", doppelhalter:true, toolNo:"", toolName:"" },
+    { id:"op_16", code:"L2107", title:"A–Gewinde M40 × 1.5", spindle:"SP3", category:"Außen", doppelhalter:true, toolNo:"", toolName:"" },
+    { id:"op_17", code:"L0207", title:"A– Gew – Entgraten / Fräsen", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_18", code:"L2105", title:"A– Bohrungen Ø5 Bürsten", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_19", code:"L2115", title:"A– Gew. Gang Wegfräsen", spindle:"SP4", category:"Außen", doppelhalter:true, toolNo:"", toolName:"" },
+    { id:"op_20", code:"L2108", title:"A– Gew. Gang Wegfräsen", spindle:"SP3", category:"Außen", doppelhalter:true, toolNo:"", toolName:"" },
+    { id:"op_21", code:"L2104", title:"I– Bohren Ø12.5", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_22", code:"L2106", title:"A_Gewinde_M40×2", spindle:"SP4", category:"Außen", doppelhalter:true, toolNo:"", toolName:"" },
+    { id:"op_25", code:"L1109", title:"Bohrungen Ø20 Ø27 Ø32 FertigDrehen", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_26", code:"L1104", title:"N_O_P", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_27", code:"L1106", title:"N_O_P", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_28", code:"L1107", title:"Nute 2xd43 Stechen", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_30", code:"L1113", title:"N_O_P", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_31", code:"L1114", title:"N_O_P", spindle:"SP4", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_32", code:"L2109", title:"N_O_P", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_33", code:"L2110", title:"N_O_P", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_34", code:"L2111", title:"N_O_P", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_35", code:"L2112", title:"N_O_P", spindle:"SP3", category:"Außen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_36", code:"L1111", title:"I-Nut 2xØ17.9 Vorstechen", spindle:"SP4", category:"Innen", doppelhalter:false, toolNo:"", toolName:"" },
+    { id:"op_37", code:"L2114", title:"Senker_Lochkreis_Ø5_Entgraten", spindle:"SP4", category:"Radial", doppelhalter:false, toolNo:"", toolName:"" }
   ],
-  nextOpId: 39,
+  nextOpId: 38,
   activeCategory: "Außen",
   spindleFilter: "SP4",
   planViewMode: "PLAN",
   libraryCollapsed: false,
 };
 
-// ---------- MODAL -------------------------------------------------------
-
+/* MODAL */
 function closeModal() {
   const overlay = $("#modalOverlay");
   if (!overlay) return;
@@ -602,164 +283,142 @@ function openModalBase({ title, description }) {
 function openInfoModal() {
   openModalBase({
     title: "CitiTool · SyncOperator",
-    description:
-      "Programmplan pro Kanal mit Werkzeugzuordnung und Einrichteblatt-Ansicht.",
+    description: "Programmplan pro Kanal mit Werkzeugzuordnung und Einrichteblatt.",
   });
 
-  const body = $("#modalBody");
-  body.innerHTML = `
+  $("#modalBody").innerHTML = `
     <p class="text-muted">
-      • Operationen im Programmplan: Name L-Code + Werkzeugname.<br>
-      • Werkzeugdaten je Operation: Werkzeug-Nr. (T..) und Werkzeug-Name.<br>
-      • Klick auf leeren Slot: Operation aus Liste wählen (mit Filtern) oder neue Operation anlegen.<br>
-      • Umschalter unten: Programmplan ↔ Einrichteblatt (Werkzeugübersicht).<br>
-      • L-Code im Plan: dynamisch nach Kanal und Zeile (L11xx / L21xx).
+      • Klick auf leeren Slot: Operation auswählen oder neue Operation anlegen.<br>
+      • Drag & Drop: Library → Slot, Slot → Slot.<br>
+      • Programmplan: Operation + L-Code (dynamisch) + T (kleiner).<br>
+      • Einrichteblatt: Werkzeugliste oben/unten nach Kanal.
     </p>
   `;
 
-  const footer = $("#modalFooter");
-  const closeBtn = document.createElement("button");
-  closeBtn.type = "button";
-  closeBtn.className = "btn-primary";
-  closeBtn.textContent = "OK";
-  closeBtn.addEventListener("click", closeModal);
-  footer.appendChild(closeBtn);
+  const ok = document.createElement("button");
+  ok.type = "button";
+  ok.className = "btn-primary";
+  ok.textContent = "OK";
+  ok.addEventListener("click", closeModal);
+  $("#modalFooter").appendChild(ok);
+}
+
+function initModalBaseEvents() {
+  const overlay = $("#modalOverlay");
+  const closeBtn = $("#modalCloseButton");
+  const infoBtn = $("#infoButton");
+
+  if (closeBtn) closeBtn.addEventListener("click", closeModal);
+
+  if (overlay) {
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closeModal();
+    });
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape") closeModal();
+  });
+
+  if (infoBtn) infoBtn.addEventListener("click", openInfoModal);
 }
 
 /**
- * Operation-Editor
- * @param {string|null} opId  - если есть, редактируем
- * @param {{kanal: string, index: number}|null} assignToSlot - если создаём новую для конкретного слота
+ * Operation editor
+ * assignToSlot: если создаём новую из пустого слота → сразу кладём в слот
  */
 function openOperationEditor(opId = null, assignToSlot = null) {
   const isEdit = !!opId;
   const existing = isEdit ? getOperationById(opId) : null;
-
   if (isEdit && !existing) return;
 
   openModalBase({
     title: isEdit ? "Operation bearbeiten" : "Neue Operation",
-    description:
-      "L-Code, Name, Spindel, Kategorie, Doppelhalter und Werkzeugdaten.",
+    description: "Basis-L, Name, Spindel, Kategorie, Doppelhalter, Werkzeug.",
   });
 
   const body = $("#modalBody");
 
-  // Первая строка: L-Code + Name
   const row1 = document.createElement("div");
   row1.className = "form-row";
 
   const codeGroup = document.createElement("div");
   codeGroup.className = "form-group form-group--code";
-  const codeLabel = document.createElement("div");
-  codeLabel.className = "form-label";
-  codeLabel.textContent = "L-Code (Basis)";
+  codeGroup.innerHTML = `<div class="form-label">L-Code (Basis)</div>`;
   const codeInput = document.createElement("input");
-  codeInput.type = "text";
   codeInput.className = "field-input";
   codeInput.placeholder = "L1101";
   codeInput.value = existing ? existing.code || "" : "";
-  codeGroup.append(codeLabel, codeInput);
+  codeGroup.appendChild(codeInput);
 
   const nameGroup = document.createElement("div");
   nameGroup.className = "form-group";
-  const nameLabel = document.createElement("div");
-  nameLabel.className = "form-label";
-  nameLabel.textContent = "Name";
+  nameGroup.innerHTML = `<div class="form-label">Name</div>`;
   const nameInput = document.createElement("input");
-  nameInput.type = "text";
   nameInput.className = "field-input";
   nameInput.placeholder = "Einstechen";
   nameInput.value = existing ? existing.title || "" : "";
-  nameGroup.append(nameLabel, nameInput);
+  nameGroup.appendChild(nameInput);
 
   row1.append(codeGroup, nameGroup);
 
-  // Вторая строка: Spindel + Kategorie
   const row2 = document.createElement("div");
   row2.className = "form-row";
 
-  const spindleGroup = document.createElement("div");
-  spindleGroup.className = "form-group";
-  const spindleLabel = document.createElement("div");
-  spindleLabel.className = "form-label";
-  spindleLabel.textContent = "Spindel";
-  const spindleSelect = document.createElement("select");
-  spindleSelect.className = "field-select";
-  spindleSelect.innerHTML = `
-    <option value="SP4">SP4 (grün)</option>
-    <option value="SP3">SP3 (blau)</option>
-  `;
-  spindleSelect.value = existing ? existing.spindle : "SP4";
-  spindleGroup.append(spindleLabel, spindleSelect);
+  const spGroup = document.createElement("div");
+  spGroup.className = "form-group";
+  spGroup.innerHTML = `<div class="form-label">Spindel</div>`;
+  const spSel = document.createElement("select");
+  spSel.className = "field-select";
+  spSel.innerHTML = `<option value="SP4">SP4</option><option value="SP3">SP3</option>`;
+  spSel.value = existing ? existing.spindle : "SP4";
+  spGroup.appendChild(spSel);
 
   const catGroup = document.createElement("div");
   catGroup.className = "form-group";
-  const catLabel = document.createElement("div");
-  catLabel.className = "form-label";
-  catLabel.textContent = "Kategorie";
-  const catSelect = document.createElement("select");
-  catSelect.className = "field-select";
-  catSelect.innerHTML = `
+  catGroup.innerHTML = `<div class="form-label">Kategorie</div>`;
+  const catSel = document.createElement("select");
+  catSel.className = "field-select";
+  catSel.innerHTML = `
     <option value="Außen">Außen Bearbeitung</option>
     <option value="Innen">Innen Bearbeitung</option>
     <option value="Radial">Radial Bearbeitung</option>
     <option value="Axial">Axial</option>
   `;
-  catSelect.value = existing ? existing.category : "Außen";
-  catGroup.append(catLabel, catSelect);
+  catSel.value = existing ? existing.category : "Außen";
+  catGroup.appendChild(catSel);
 
-  row2.append(spindleGroup, catGroup);
+  row2.append(spGroup, catGroup);
 
-  // Третья строка: Doppelhalter toggle
   const row3 = document.createElement("div");
   row3.className = "toggle-row";
   const toggle = document.createElement("div");
   toggle.className = "toggle-pill";
-  const toggleDot = document.createElement("div");
-  toggleDot.className = "toggle-dot";
-  const toggleLabel = document.createElement("span");
-  toggleLabel.textContent = "Doppelhalter";
-
-  toggle.append(toggleDot, toggleLabel);
+  toggle.innerHTML = `<div class="toggle-dot"></div><span>Doppelhalter</span>`;
+  if (existing && existing.doppelhalter) toggle.classList.add("active");
+  toggle.addEventListener("click", () => toggle.classList.toggle("active"));
   row3.appendChild(toggle);
 
-  const initialDoppel = existing ? !!existing.doppelhalter : false;
-  if (initialDoppel) {
-    toggle.classList.add("active");
-  }
-
-  toggle.addEventListener("click", () => {
-    toggle.classList.toggle("active");
-  });
-
-  // Четвёртая строка: Werkzeug-Nr. + Werkzeug-Name
   const row4 = document.createElement("div");
   row4.className = "form-row";
 
   const toolNoGroup = document.createElement("div");
   toolNoGroup.className = "form-group form-group--code";
-  const toolNoLabel = document.createElement("div");
-  toolNoLabel.className = "form-label";
-  toolNoLabel.textContent = "Werkzeug-Nr.";
+  toolNoGroup.innerHTML = `<div class="form-label">Werkzeug-Nr.</div>`;
   const toolNoInput = document.createElement("input");
-  toolNoInput.type = "text";
   toolNoInput.className = "field-input";
-  toolNoInput.placeholder = "T11";
+  toolNoInput.placeholder = "T0101";
   toolNoInput.value = existing ? existing.toolNo || "" : "";
-  toolNoGroup.append(toolNoLabel, toolNoInput);
+  toolNoGroup.appendChild(toolNoInput);
 
   const toolNameGroup = document.createElement("div");
   toolNameGroup.className = "form-group";
-  const toolNameLabel = document.createElement("div");
-  toolNameLabel.className = "form-label";
-  toolNameLabel.textContent = "Werkzeug-Name";
+  toolNameGroup.innerHTML = `<div class="form-label">Werkzeug-Name</div>`;
   const toolNameInput = document.createElement("input");
-  toolNameInput.type = "text";
   toolNameInput.className = "field-input";
   toolNameInput.placeholder = "ABSTECHER-2mm-Y";
   toolNameInput.value = existing ? existing.toolName || "" : "";
-  toolNameGroup.append(toolNameLabel, toolNameInput);
+  toolNameGroup.appendChild(toolNameInput);
 
   row4.append(toolNoGroup, toolNameGroup);
 
@@ -767,79 +426,51 @@ function openOperationEditor(opId = null, assignToSlot = null) {
 
   const footer = $("#modalFooter");
 
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.className = "btn-outline";
-  cancelBtn.textContent = "Abbrechen";
-  cancelBtn.addEventListener("click", closeModal);
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn-outline";
+  cancel.textContent = "Abbrechen";
+  cancel.addEventListener("click", closeModal);
 
-  const saveBtn = document.createElement("button");
-  saveBtn.type = "button";
-  saveBtn.className = "btn-primary";
-  saveBtn.textContent = isEdit ? "Speichern" : "Anlegen";
+  const save = document.createElement("button");
+  save.type = "button";
+  save.className = "btn-primary";
+  save.textContent = isEdit ? "Speichern" : "Anlegen";
 
-  saveBtn.addEventListener("click", () => {
+  save.addEventListener("click", () => {
     const code = codeInput.value.trim();
     const title = nameInput.value.trim();
-    if (!code) {
-      codeInput.focus();
-      return;
-    }
-    if (!title) {
-      nameInput.focus();
-      return;
-    }
+    if (!code) return codeInput.focus();
+    if (!title) return nameInput.focus();
 
-    const spindle = spindleSelect.value;
-    const category = catSelect.value;
-    const doppelhalter = toggle.classList.contains("active");
-
-    const toolNo = toolNoInput.value.trim();
-    const toolName = toolNameInput.value.trim();
+    const opData = {
+      code,
+      title,
+      spindle: spSel.value,
+      category: catSel.value,
+      doppelhalter: toggle.classList.contains("active"),
+      toolNo: toolNoInput.value.trim(),
+      toolName: toolNameInput.value.trim(),
+    };
 
     if (isEdit) {
-      existing.code = code;
-      existing.title = title;
-      existing.spindle = spindle;
-      existing.category = category;
-      existing.doppelhalter = doppelhalter;
-      existing.toolNo = toolNo;
-      existing.toolName = toolName;
+      Object.assign(existing, opData);
     } else {
-      const newOp = {
-        id: "op_" + state.nextOpId++,
-        code,
-        title,
-        spindle,
-        category,
-        doppelhalter,
-        toolNo,
-        toolName,
-      };
+      const newOp = { id: "op_" + state.nextOpId++, ...opData };
       state.library.push(newOp);
 
-      // если создаём операцию "из слота" — сразу положить её в этот слот
-      if (
-        assignToSlot &&
-        assignToSlot.kanal &&
-        typeof assignToSlot.index === "number"
-      ) {
-        const kanal = assignToSlot.kanal;
-        const idx = assignToSlot.index;
-        ensureSlotCount(kanal, idx + 1);
-        state.slots[kanal][idx] = newOp.id;
+      if (assignToSlot && assignToSlot.kanal && typeof assignToSlot.index === "number") {
+        ensureSlotCount(assignToSlot.kanal, assignToSlot.index + 1);
+        state.slots[assignToSlot.kanal][assignToSlot.index] = newOp.id;
       }
     }
 
     closeModal();
-    renderLibraryList();
-    renderSlots();
-    renderPlan();
-    updatePlanViewSwitcherUI();
     touchState();
+    renderAll();
   });
 
-  footer.append(cancelBtn, saveBtn);
+  footer.append(cancel, save);
 }
 
 function openDeleteOperationModal(opId) {
@@ -851,87 +482,46 @@ function openDeleteOperationModal(opId) {
     description: "Operation wird aus Library und allen Slots entfernt.",
   });
 
-  const body = $("#modalBody");
-  body.innerHTML = `
-    <p>
-      Möchtest du die Operation<br>
-      <strong>${formatOperationLabel(op)}</strong><br>
-      wirklich löschen?
-    </p>
+  $("#modalBody").innerHTML = `
+    <p>Möchtest du <strong>${escapeHtml(formatOperationLabel(op))}</strong> wirklich löschen?</p>
   `;
 
   const footer = $("#modalFooter");
 
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.className = "btn-outline";
-  cancelBtn.textContent = "Abbrechen";
-  cancelBtn.addEventListener("click", closeModal);
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn-outline";
+  cancel.textContent = "Abbrechen";
+  cancel.addEventListener("click", closeModal);
 
-  const deleteBtn = document.createElement("button");
-  deleteBtn.type = "button";
-  deleteBtn.className = "btn-outline btn-outline-danger";
-  deleteBtn.innerHTML =
-    '<span class="btn-icon"><svg class="icon-svg"><use href="#icon-trash"></use></svg></span><span>Löschen</span>';
-  deleteBtn.addEventListener("click", () => {
-    ["1", "2"].forEach((kanal) => {
-      state.slots[kanal] = state.slots[kanal].map((id) =>
-        id === opId ? null : id
-      );
+  const del = document.createElement("button");
+  del.type = "button";
+  del.className = "btn-outline";
+  del.style.borderColor = "rgba(239,68,68,0.3)";
+  del.style.color = "#b91c1c";
+  del.style.background = "#fef2f2";
+  del.innerHTML = `<svg class="icon-svg"><use href="#icon-trash"></use></svg> Löschen`;
+
+  del.addEventListener("click", () => {
+    ["1", "2"].forEach((k) => {
+      state.slots[k] = state.slots[k].map((id) => (id === opId ? null : id));
     });
-
-    state.library = state.library.filter((o) => o.id !== opId);
+    state.library = state.library.filter((x) => x.id !== opId);
 
     closeModal();
-    renderLibraryList();
-    renderSlots();
-    renderPlan();
-    updatePlanViewSwitcherUI();
     touchState();
+    renderAll();
   });
 
-  footer.append(cancelBtn, deleteBtn);
+  footer.append(cancel, del);
 }
 
-function initModalBaseEvents() {
-  const overlay = $("#modalOverlay");
-  const closeBtn = $("#modalCloseButton");
-  const infoBtn = $("#infoButton");
-
-  if (closeBtn) {
-    closeBtn.addEventListener("click", closeModal);
-  }
-
-  if (overlay) {
-    overlay.addEventListener("click", (e) => {
-      if (e.target === overlay) {
-        closeModal();
-      }
-    });
-  }
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape") {
-      closeModal();
-    }
-  });
-
-  if (infoBtn) {
-    infoBtn.addEventListener("click", openInfoModal);
-  }
-}
-
-// ---------- KANAL SWITCHER ----------------------------------------------
-
+/* Kanal switcher */
 function initKanalSwitcher() {
   const hint = $("#kanalHint");
 
   const updateHint = () => {
-    if (state.currentKanal === "1") {
-      hint.textContent = "Revolver oben · Kanal 1";
-    } else {
-      hint.textContent = "Revolver unten · Kanal 2";
-    }
+    hint.textContent = state.currentKanal === "1" ? "Revolver oben · Kanal 1" : "Revolver unten · Kanal 2";
   };
 
   $$("#kanalSwitcher .kanal-option").forEach((el) => {
@@ -940,32 +530,64 @@ function initKanalSwitcher() {
       if (!kanal || kanal === state.currentKanal) return;
 
       state.currentKanal = kanal;
-
       $$("#kanalSwitcher .kanal-option").forEach((opt) => {
-        opt.classList.toggle(
-          "active",
-          opt.dataset.kanal === state.currentKanal
-        );
+        opt.classList.toggle("active", opt.dataset.kanal === state.currentKanal);
       });
 
       updateHint();
+      touchState();
       renderSlots();
       renderPlan();
       updatePlanViewSwitcherUI();
-      touchState();
     });
   });
 
   updateHint();
 }
 
-// ---------- SLOTS -------------------------------------------------------
-
+/* Slots */
 function ensureSlotCount(kanal, count) {
-  const kanalSlots = state.slots[kanal];
-  while (kanalSlots.length < count) {
-    kanalSlots.push(null);
+  while (state.slots[kanal].length < count) state.slots[kanal].push(null);
+}
+
+function onSlotDragEnter(e) { e.preventDefault(); e.stopPropagation(); this.classList.add("drag-over"); }
+function onSlotDragOver(e) { e.preventDefault(); e.stopPropagation(); if (e.dataTransfer) e.dataTransfer.dropEffect="move"; this.classList.add("drag-over"); }
+function onSlotDragLeave(e) { e.stopPropagation(); this.classList.remove("drag-over"); }
+
+function onSlotDrop(e) {
+  e.preventDefault();
+  e.stopPropagation();
+  this.classList.remove("drag-over");
+
+  const raw = e.dataTransfer.getData("text/plain");
+  if (!raw) return;
+
+  let payload;
+  try { payload = JSON.parse(raw); } catch { return; }
+
+  const targetIndex = Number(this.dataset.index);
+  if (Number.isNaN(targetIndex)) return;
+
+  const kanalSlots = state.slots[state.currentKanal];
+
+  if (payload.kind === "op") {
+    ensureSlotCount(state.currentKanal, targetIndex + 1);
+    kanalSlots[targetIndex] = payload.id;
+  } else if (payload.kind === "slot") {
+    const fromIndex = Number(payload.index);
+    if (Number.isNaN(fromIndex) || fromIndex === targetIndex) return;
+    if (fromIndex < 0 || fromIndex >= kanalSlots.length) return;
+
+    const [moved] = kanalSlots.splice(fromIndex, 1);
+    kanalSlots.splice(targetIndex, 0, moved);
+  } else {
+    return;
   }
+
+  touchState();
+  renderSlots();
+  renderPlan();
+  updatePlanViewSwitcherUI();
 }
 
 function renderSlots() {
@@ -977,14 +599,15 @@ function renderSlots() {
 
   for (let i = 0; i < rowCount; i++) {
     const rowNumber = i + 1;
-    const container = document.createElement("div");
-    container.className = "slot-row";
-    container.dataset.index = String(i);
 
-    container.addEventListener("dragover", onSlotDragOver);
-    container.addEventListener("dragenter", onSlotDragEnter);
-    container.addEventListener("dragleave", onSlotDragLeave);
-    container.addEventListener("drop", onSlotDrop);
+    const row = document.createElement("div");
+    row.className = "slot-row";
+    row.dataset.index = String(i);
+
+    row.addEventListener("dragover", onSlotDragOver);
+    row.addEventListener("dragenter", onSlotDragEnter);
+    row.addEventListener("dragleave", onSlotDragLeave);
+    row.addEventListener("drop", onSlotDrop);
 
     const idx = document.createElement("div");
     idx.className = "slot-index";
@@ -997,22 +620,17 @@ function renderSlots() {
     const op = opId ? getOperationById(opId) : null;
 
     if (op) {
-      container.classList.add("filled");
-      container.setAttribute("draggable", "true");
+      row.classList.add("filled");
+      row.setAttribute("draggable", "true");
 
-      container.addEventListener("dragstart", (e) => {
-        const payload = { kind: "slot", index: i };
+      row.addEventListener("dragstart", (e) => {
         e.dataTransfer.effectAllowed = "move";
-        e.dataTransfer.setData("text/plain", JSON.stringify(payload));
+        e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "slot", index: i }));
       });
 
       const title = document.createElement("div");
       title.className = "slot-title";
-      title.textContent = formatOperationLabelDynamic(
-        op,
-        state.currentKanal,
-        rowNumber
-      );
+      title.textContent = formatSlotTitleText(op, state.currentKanal, rowNumber);
       main.appendChild(title);
 
       const meta = document.createElement("div");
@@ -1020,46 +638,42 @@ function renderSlots() {
 
       const toolName = (op.toolName || "").trim();
       if (toolName) {
-        const toolLabel = document.createElement("span");
-        toolLabel.className = "badge badge-tool";
-        toolLabel.textContent = toolName;
-        meta.appendChild(toolLabel);
+        const bTool = document.createElement("span");
+        bTool.className = "badge badge-tool";
+        bTool.textContent = toolName;
+        meta.appendChild(bTool);
       }
 
-      const badgeSp = document.createElement("span");
-      badgeSp.className =
-        "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
-      badgeSp.textContent = op.spindle;
+      const bSp = document.createElement("span");
+      bSp.className = "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
+      bSp.textContent = op.spindle;
 
-      const badgeCat = document.createElement("span");
-      badgeCat.className = "badge badge-soft";
-      badgeCat.textContent = op.category;
+      const bCat = document.createElement("span");
+      bCat.className = "badge badge-soft";
+      bCat.textContent = op.category;
 
-      meta.append(badgeSp, badgeCat);
+      meta.append(bSp, bCat);
 
       if (op.doppelhalter) {
-        const badgeD = document.createElement("span");
-        badgeD.className = "badge badge-tag";
-        badgeD.textContent = "Doppelhalter";
-        meta.appendChild(badgeD);
+        const bD = document.createElement("span");
+        bD.className = "badge badge-tag";
+        bD.textContent = "Doppelhalter";
+        meta.appendChild(bD);
       }
 
       main.appendChild(meta);
 
-      container.addEventListener("click", (e) => {
+      row.addEventListener("click", (e) => {
         if (e.target.closest(".slot-actions")) return;
         openOperationEditor(opId);
       });
     } else {
-      const placeholder = document.createElement("div");
-      placeholder.className = "slot-placeholder";
-      placeholder.textContent =
-        "Operation hier ablegen (Drag & Drop oder Klick)";
-      main.appendChild(placeholder);
+      const p = document.createElement("div");
+      p.className = "slot-placeholder";
+      p.textContent = "Operation hier ablegen (Drag & Drop oder Klick)";
+      main.appendChild(p);
 
-      container.addEventListener("click", () => {
-        openSlotOperationPicker(i);
-      });
+      row.addEventListener("click", () => openSlotOperationPicker(i));
     }
 
     const actions = document.createElement("div");
@@ -1069,122 +683,43 @@ function renderSlots() {
     clearBtn.type = "button";
     clearBtn.className = "icon-button";
     clearBtn.title = "Slot leeren";
-    clearBtn.innerHTML =
-      '<svg class="icon-svg"><use href="#icon-trash"></use></svg>';
-
+    clearBtn.innerHTML = `<svg class="icon-svg"><use href="#icon-trash"></use></svg>`;
     clearBtn.addEventListener("click", (e) => {
       e.stopPropagation();
       kanalSlots[i] = null;
+      touchState();
       renderSlots();
       renderPlan();
       updatePlanViewSwitcherUI();
-      touchState();
     });
-
-    clearBtn.addEventListener("dragover", (e) => e.stopPropagation());
-    clearBtn.addEventListener("drop", (e) => e.stopPropagation());
 
     actions.appendChild(clearBtn);
 
-    container.append(idx, main, actions);
-    list.appendChild(container);
+    row.append(idx, main, actions);
+    list.appendChild(row);
   }
-}
-
-function onSlotDragEnter(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  this.classList.add("drag-over");
-}
-
-function onSlotDragOver(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  if (e.dataTransfer) {
-    e.dataTransfer.dropEffect = "move";
-  }
-  this.classList.add("drag-over");
-}
-
-function onSlotDragLeave(e) {
-  e.stopPropagation();
-  this.classList.remove("drag-over");
-}
-
-function onSlotDrop(e) {
-  e.preventDefault();
-  e.stopPropagation();
-  this.classList.remove("drag-over");
-
-  const raw = e.dataTransfer.getData("text/plain");
-  if (!raw) return;
-
-  let payload;
-  try {
-    payload = JSON.parse(raw);
-  } catch {
-    return;
-  }
-
-  const targetIndex = Number(this.dataset.index);
-  if (Number.isNaN(targetIndex)) return;
-
-  const kanalSlots = state.slots[state.currentKanal];
-
-  if (payload.kind === "op") {
-    const opId = payload.id;
-    if (!opId) return;
-    ensureSlotCount(state.currentKanal, targetIndex + 1);
-    kanalSlots[targetIndex] = opId;
-  } else if (payload.kind === "slot") {
-    const fromIndex = Number(payload.index);
-    if (
-      Number.isNaN(fromIndex) ||
-      fromIndex === targetIndex ||
-      fromIndex < 0 ||
-      fromIndex >= kanalSlots.length
-    ) {
-      return;
-    }
-    const [moved] = kanalSlots.splice(fromIndex, 1);
-    kanalSlots.splice(targetIndex, 0, moved);
-  } else {
-    return;
-  }
-
-  renderSlots();
-  renderPlan();
-  updatePlanViewSwitcherUI();
-  touchState();
 }
 
 function initAddSlotButton() {
   const btn = $("#addSlotBtn");
   if (!btn) return;
   btn.addEventListener("click", () => {
-    const kanalSlots = state.slots[state.currentKanal];
-    kanalSlots.push(null);
+    state.slots[state.currentKanal].push(null);
+    touchState();
     renderSlots();
     renderPlan();
     updatePlanViewSwitcherUI();
-    touchState();
   });
 }
 
-// ---------- LIBRARY FILTERS & LIST --------------------------------------
-
+/* Library filters */
 function getFilteredOperations() {
   let ops = state.library;
 
-  if (state.activeCategory !== "Alle") {
-    ops = ops.filter((op) => op.category === state.activeCategory);
-  }
+  if (state.activeCategory !== "Alle") ops = ops.filter((op) => op.category === state.activeCategory);
 
-  if (state.spindleFilter === "SP3") {
-    ops = ops.filter((op) => op.spindle === "SP3");
-  } else if (state.spindleFilter === "SP4") {
-    ops = ops.filter((op) => op.spindle === "SP4");
-  }
+  if (state.spindleFilter === "SP3") ops = ops.filter((op) => op.spindle === "SP3");
+  else if (state.spindleFilter === "SP4") ops = ops.filter((op) => op.spindle === "SP4");
 
   return ops;
 }
@@ -1193,23 +728,19 @@ function renderLibraryFilters() {
   const container = $("#libraryFilters");
   container.innerHTML = "";
 
-  if (state.libraryCollapsed) return;
-
   const row1 = document.createElement("div");
   row1.className = "library-filters-row";
 
   state.categories.forEach((cat) => {
     const pill = document.createElement("button");
     pill.type = "button";
-    pill.className =
-      "filter-pill" + (state.activeCategory === cat ? " active" : "");
-    pill.textContent =
-      cat === "Alle" ? "Alle Kategorien" : `${cat} Bearbeitung`;
+    pill.className = "filter-pill" + (state.activeCategory === cat ? " active" : "");
+    pill.textContent = cat === "Alle" ? "Alle Kategorien" : `${cat} Bearbeitung`;
     pill.addEventListener("click", () => {
       state.activeCategory = cat;
+      touchState();
       renderLibraryFilters();
       renderLibraryList();
-      touchState();
     });
     row1.appendChild(pill);
   });
@@ -1224,23 +755,22 @@ function renderLibraryFilters() {
   label.textContent = "Spindel:";
   row2.appendChild(label);
 
-  const spindleOptions = [
-    { value: "ALL", label: "Alle" },
-    { value: "SP4", label: "SP4 (grün)" },
-    { value: "SP3", label: "SP3 (blau)" },
+  const opts = [
+    { v: "ALL", t: "Alle" },
+    { v: "SP4", t: "SP4" },
+    { v: "SP3", t: "SP3" },
   ];
 
-  spindleOptions.forEach((opt) => {
+  opts.forEach((o) => {
     const pill = document.createElement("button");
     pill.type = "button";
-    pill.className =
-      "filter-pill" + (state.spindleFilter === opt.value ? " active" : "");
-    pill.textContent = opt.label;
+    pill.className = "filter-pill" + (state.spindleFilter === o.v ? " active" : "");
+    pill.textContent = o.t;
     pill.addEventListener("click", () => {
-      state.spindleFilter = opt.value;
+      state.spindleFilter = o.v;
+      touchState();
       renderLibraryFilters();
       renderLibraryList();
-      touchState();
     });
     row2.appendChild(pill);
   });
@@ -1252,10 +782,7 @@ function renderLibraryList() {
   const list = $("#libraryList");
   list.innerHTML = "";
 
-  if (state.libraryCollapsed) return;
-
   const ops = getFilteredOperations();
-
   if (!ops.length) {
     const empty = document.createElement("div");
     empty.className = "library-empty";
@@ -1267,18 +794,14 @@ function renderLibraryList() {
   ops.forEach((op) => {
     const card = document.createElement("div");
     card.className = "op-card";
-    card.dataset.opId = op.id;
     card.setAttribute("draggable", "true");
 
     card.addEventListener("dragstart", (e) => {
-      const payload = { kind: "op", id: op.id };
       e.dataTransfer.effectAllowed = "move";
-      e.dataTransfer.setData("text/plain", JSON.stringify(payload));
+      e.dataTransfer.setData("text/plain", JSON.stringify({ kind: "op", id: op.id }));
     });
 
-    card.addEventListener("click", () => {
-      openOperationEditor(op.id);
-    });
+    card.addEventListener("click", () => openOperationEditor(op.id));
 
     const title = document.createElement("div");
     title.className = "op-title";
@@ -1290,48 +813,42 @@ function renderLibraryList() {
     const meta = document.createElement("div");
     meta.className = "op-meta";
 
-    const badgeSp = document.createElement("span");
-    badgeSp.className =
-      "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
-    badgeSp.textContent = op.spindle;
+    const bSp = document.createElement("span");
+    bSp.className = "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
+    bSp.textContent = op.spindle;
 
-    const badgeCat = document.createElement("span");
-    badgeCat.className = "badge badge-soft";
-    badgeCat.textContent = op.category;
+    const bCat = document.createElement("span");
+    bCat.className = "badge badge-soft";
+    bCat.textContent = op.category;
 
-    meta.append(badgeSp, badgeCat);
+    meta.append(bSp, bCat);
 
     if (op.doppelhalter) {
-      const badgeD = document.createElement("span");
-      badgeD.className = "badge badge-tag";
-      badgeD.textContent = "Doppelhalter";
-      meta.appendChild(badgeD);
+      const bD = document.createElement("span");
+      bD.className = "badge badge-tag";
+      bD.textContent = "Doppelhalter";
+      meta.appendChild(bD);
     }
 
     const toolNo = (op.toolNo || "").trim();
     if (toolNo) {
-      const badgeT = document.createElement("span");
-      badgeT.className = "badge badge-soft";
-      badgeT.textContent = toolNo;
-      meta.appendChild(badgeT);
+      const bT = document.createElement("span");
+      bT.className = "badge badge-soft";
+      bT.textContent = toolNo;
+      meta.appendChild(bT);
     }
 
-    const btnWrap = document.createElement("div");
-    const delBtn = document.createElement("button");
-    delBtn.type = "button";
-    delBtn.className = "icon-button";
-    delBtn.title = "Löschen";
-    delBtn.innerHTML =
-      '<svg class="icon-svg"><use href="#icon-trash"></use></svg>';
-
-    delBtn.addEventListener("click", (e) => {
+    const del = document.createElement("button");
+    del.type = "button";
+    del.className = "icon-button";
+    del.title = "Löschen";
+    del.innerHTML = `<svg class="icon-svg"><use href="#icon-trash"></use></svg>`;
+    del.addEventListener("click", (e) => {
       e.stopPropagation();
       openDeleteOperationModal(op.id);
     });
 
-    btnWrap.append(delBtn);
-    footer.append(meta, btnWrap);
-
+    footer.append(meta, del);
     card.append(title, footer);
     list.appendChild(card);
   });
@@ -1343,81 +860,14 @@ function initAddOperationButton() {
   btn.addEventListener("click", () => openOperationEditor(null));
 }
 
-// ---------- COLLAPSE OPERATION LIBRARY ---------------------------------
-
-function applyLibraryCollapsedState() {
-  const filters = $("#libraryFilters");
-  const list = $("#libraryList");
-  const addWrap = document.querySelector(".library-add");
-  const toggleBtn = $("#libraryCollapseBtn");
-
-  const collapsed = state.libraryCollapsed;
-
-  if (filters) filters.style.display = collapsed ? "none" : "";
-  if (list) list.style.display = collapsed ? "none" : "";
-  if (addWrap) addWrap.style.display = collapsed ? "none" : "";
-
-  if (toggleBtn) {
-    toggleBtn.setAttribute("aria-pressed", collapsed ? "true" : "false");
-    toggleBtn.title = collapsed
-      ? "OPERATION LIBRARY anzeigen"
-      : "OPERATION LIBRARY ausblenden";
-    toggleBtn.textContent = collapsed ? "▸" : "▾";
-  }
-}
-
-function initLibraryCollapse() {
-  const header = document.querySelector(".library-card .section-header");
-  if (!header) return;
-
-  let actions = header.querySelector(".section-actions");
-  if (!actions) {
-    actions = document.createElement("div");
-    actions.className = "section-actions";
-    header.appendChild(actions);
-  }
-
-  const btn = document.createElement("button");
-  btn.type = "button";
-  btn.id = "libraryCollapseBtn";
-  btn.className = "icon-button";
-  btn.style.minWidth = "24px";
-  btn.style.height = "24px";
-  btn.textContent = state.libraryCollapsed ? "▸" : "▾";
-  btn.title = state.libraryCollapsed
-    ? "OPERATION LIBRARY anzeigen"
-    : "OPERATION LIBRARY ausblenden";
-
-  btn.addEventListener("click", (e) => {
-    e.stopPropagation();
-    state.libraryCollapsed = !state.libraryCollapsed;
-    applyLibraryCollapsedState();
-    if (!state.libraryCollapsed) {
-      renderLibraryFilters();
-      renderLibraryList();
-    }
-    touchState();
-  });
-
-  actions.prepend(btn);
-
-  applyLibraryCollapsedState();
-}
-
-// ---------- SLOT PICKER (модалка по клику на пустой слот) ---------------
-
+/* Slot picker: click empty slot */
 function getSlotPickerFilteredOps() {
   let ops = state.library;
 
-  if (state.slotPickerCategory !== "Alle") {
-    ops = ops.filter((op) => op.category === state.slotPickerCategory);
-  }
+  if (state.slotPickerCategory !== "Alle") ops = ops.filter((op) => op.category === state.slotPickerCategory);
 
-  if (state.slotPickerSpindle === "SP3") {
-    ops = ops.filter((op) => op.spindle === "SP3");
-  } else if (state.slotPickerSpindle === "SP4") {
-    ops = ops.filter((op) => op.spindle === "SP4");
-  }
+  if (state.slotPickerSpindle === "SP3") ops = ops.filter((op) => op.spindle === "SP3");
+  else if (state.slotPickerSpindle === "SP4") ops = ops.filter((op) => op.spindle === "SP4");
 
   return ops;
 }
@@ -1428,36 +878,30 @@ function openSlotOperationPicker(slotIndex) {
 
   openModalBase({
     title: "Operation auswählen",
-    description:
-      "Wähle eine Operation aus der Liste oder lege eine neue an. Eigene Kategorie- und Spindel-Filter nur für diesen Slot.",
+    description: "Wähle eine Operation oder lege eine neue an (direkt in den Slot).",
   });
 
   const body = $("#modalBody");
 
-  const filtersContainer = document.createElement("div");
-  filtersContainer.className = "library-filters";
+  const filters = document.createElement("div");
+  filters.className = "library-filters";
 
   const row1 = document.createElement("div");
   row1.className = "library-filters-row";
 
-  const cats = ["Alle", "Außen", "Innen", "Radial", "Axial"];
-  cats.forEach((cat) => {
+  ["Alle", "Außen", "Innen", "Radial", "Axial"].forEach((cat) => {
     const pill = document.createElement("button");
     pill.type = "button";
-    pill.className =
-      "filter-pill" + (state.slotPickerCategory === cat ? " active" : "");
-    pill.textContent =
-      cat === "Alle" ? "Alle Kategorien" : `${cat} Bearbeitung`;
+    pill.className = "filter-pill" + (state.slotPickerCategory === cat ? " active" : "");
+    pill.textContent = cat === "Alle" ? "Alle Kategorien" : `${cat} Bearbeitung`;
     pill.addEventListener("click", () => {
       state.slotPickerCategory = cat;
-      renderOpsList();
-      updatePickerFilterStyles();
+      renderList();
+      updateStyles();
     });
-    pill.dataset.slotPickerCat = cat;
+    pill.dataset.cat = cat;
     row1.appendChild(pill);
   });
-
-  filtersContainer.appendChild(row1);
 
   const row2 = document.createElement("div");
   row2.className = "library-spindle-row";
@@ -1467,54 +911,40 @@ function openSlotOperationPicker(slotIndex) {
   label.textContent = "Spindel:";
   row2.appendChild(label);
 
-  const spindleOptions = [
-    { value: "ALL", label: "Alle" },
-    { value: "SP4", label: "SP4 (grün)" },
-    { value: "SP3", label: "SP3 (blau)" },
-  ];
-
-  spindleOptions.forEach((opt) => {
+  [
+    { v: "ALL", t: "Alle" },
+    { v: "SP4", t: "SP4" },
+    { v: "SP3", t: "SP3" },
+  ].forEach((o) => {
     const pill = document.createElement("button");
     pill.type = "button";
-    pill.className =
-      "filter-pill" +
-      (state.slotPickerSpindle === opt.value ? " active" : "");
-    pill.textContent = opt.label;
-    pill.dataset.slotPickerSpindle = opt.value;
+    pill.className = "filter-pill" + (state.slotPickerSpindle === o.v ? " active" : "");
+    pill.textContent = o.t;
     pill.addEventListener("click", () => {
-      state.slotPickerSpindle = opt.value;
-      renderOpsList();
-      updatePickerFilterStyles();
+      state.slotPickerSpindle = o.v;
+      renderList();
+      updateStyles();
     });
+    pill.dataset.sp = o.v;
     row2.appendChild(pill);
   });
 
-  filtersContainer.appendChild(row2);
+  filters.append(row1, row2);
 
   const list = document.createElement("div");
   list.className = "slot-picker-list";
 
-  body.append(filtersContainer, list);
+  body.append(filters, list);
 
-  function updatePickerFilterStyles() {
-    filtersContainer
-      .querySelectorAll("[data-slot-picker-cat]")
-      .forEach((el) => {
-        const cat = el.dataset.slotPickerCat;
-        el.classList.toggle("active", state.slotPickerCategory === cat);
-      });
-    filtersContainer
-      .querySelectorAll("[data-slot-picker-spindle]")
-      .forEach((el) => {
-        const v = el.dataset.slotPickerSpindle;
-        el.classList.toggle("active", state.slotPickerSpindle === v);
-      });
+  function updateStyles() {
+    filters.querySelectorAll("[data-cat]").forEach((b) => b.classList.toggle("active", b.dataset.cat === state.slotPickerCategory));
+    filters.querySelectorAll("[data-sp]").forEach((b) => b.classList.toggle("active", b.dataset.sp === state.slotPickerSpindle));
   }
 
-  function renderOpsList() {
+  function renderList() {
     list.innerHTML = "";
-
     const ops = getSlotPickerFilteredOps();
+
     if (!ops.length) {
       const p = document.createElement("p");
       p.className = "text-muted";
@@ -1539,79 +969,72 @@ function openSlotOperationPicker(slotIndex) {
       const meta = document.createElement("div");
       meta.className = "op-meta";
 
-      const badgeSp = document.createElement("span");
-      badgeSp.className =
-        "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
-      badgeSp.textContent = op.spindle;
+      const bSp = document.createElement("span");
+      bSp.className = "badge " + (op.spindle === "SP4" ? "badge-sp4" : "badge-sp3");
+      bSp.textContent = op.spindle;
 
-      const badgeCat = document.createElement("span");
-      badgeCat.className = "badge badge-soft";
-      badgeCat.textContent = op.category;
+      const bCat = document.createElement("span");
+      bCat.className = "badge badge-soft";
+      bCat.textContent = op.category;
 
-      meta.append(badgeSp, badgeCat);
+      meta.append(bSp, bCat);
 
       if (op.doppelhalter) {
-        const badgeD = document.createElement("span");
-        badgeD.className = "badge badge-tag";
-        badgeD.textContent = "Doppelhalter";
-        meta.appendChild(badgeD);
+        const bD = document.createElement("span");
+        bD.className = "badge badge-tag";
+        bD.textContent = "Doppelhalter";
+        meta.appendChild(bD);
       }
 
       const toolNo = (op.toolNo || "").trim();
       if (toolNo) {
-        const badgeT = document.createElement("span");
-        badgeT.className = "badge badge-soft";
-        badgeT.textContent = toolNo;
-        meta.appendChild(badgeT);
+        const bT = document.createElement("span");
+        bT.className = "badge badge-soft";
+        bT.textContent = toolNo;
+        meta.appendChild(bT);
       }
 
-      footer.append(meta);
-
+      footer.appendChild(meta);
       btn.append(title, footer);
 
       btn.addEventListener("click", () => {
         ensureSlotCount(state.currentKanal, slotIndex + 1);
         state.slots[state.currentKanal][slotIndex] = op.id;
         closeModal();
+        touchState();
         renderSlots();
         renderPlan();
         updatePlanViewSwitcherUI();
-        touchState();
       });
 
       list.appendChild(btn);
     });
   }
 
-  updatePickerFilterStyles();
-  renderOpsList();
+  updateStyles();
+  renderList();
 
   const footer = $("#modalFooter");
-  const cancelBtn = document.createElement("button");
-  cancelBtn.type = "button";
-  cancelBtn.className = "btn-outline";
-  cancelBtn.textContent = "Abbrechen";
-  cancelBtn.addEventListener("click", closeModal);
 
-  const newBtn = document.createElement("button");
-  newBtn.type = "button";
-  newBtn.className = "btn-primary";
-  newBtn.textContent = "Neue Operation anlegen";
-  newBtn.addEventListener("click", () => {
-    // закрываем список и сразу открываем редактор,
-    // привязанный к текущему слоту / каналу
+  const cancel = document.createElement("button");
+  cancel.type = "button";
+  cancel.className = "btn-outline";
+  cancel.textContent = "Abbrechen";
+  cancel.addEventListener("click", closeModal);
+
+  const create = document.createElement("button");
+  create.type = "button";
+  create.className = "btn-primary";
+  create.textContent = "Neue Operation anlegen";
+  create.addEventListener("click", () => {
     closeModal();
-    openOperationEditor(null, {
-      kanal: state.currentKanal,
-      index: slotIndex,
-    });
+    openOperationEditor(null, { kanal: state.currentKanal, index: slotIndex });
   });
 
-  footer.append(cancelBtn, newBtn);
+  footer.append(cancel, create);
 }
 
-// ---------- PLAN VIEW SWITCHER -----------------------------------------
-
+/* Plan view switcher */
 function initPlanViewSwitcher() {
   const actions = document.querySelector(".plan-card .section-actions");
   if (!actions) return;
@@ -1640,25 +1063,21 @@ function initPlanViewSwitcher() {
     const view = btn.dataset.view;
     if (!view || view === state.planViewMode) return;
     state.planViewMode = view;
+    touchState();
     updatePlanViewSwitcherUI();
     renderPlan();
-    touchState();
   });
 
   updatePlanViewSwitcherUI();
 }
 
 function updatePlanViewSwitcherUI() {
-  const pills = document.querySelectorAll(".plan-view-pill");
-  pills.forEach((btn) => {
-    const view = btn.dataset.view;
-    const active = view === state.planViewMode;
-    btn.classList.toggle("active", active);
+  document.querySelectorAll(".plan-view-pill").forEach((b) => {
+    b.classList.toggle("active", b.dataset.view === state.planViewMode);
   });
 }
 
-// ---------- EINRICHTE-DATA (общее map по T) -----------------------------
-
+/* Einrichteblatt */
 function buildEinrichteData() {
   const map = {};
 
@@ -1671,56 +1090,35 @@ function buildEinrichteData() {
       if (!op) continue;
 
       const toolNo = (op.toolNo || "").trim();
-      const toolName = (op.toolName || "").trim();
       if (!toolNo) continue;
 
-      if (!map[toolNo]) {
-        map[toolNo] = {
-          toolNo,
-          oben: "",
-          unten: "",
-        };
-      }
+      if (!map[toolNo]) map[toolNo] = { toolNo, oben: "", unten: "" };
 
-      const text = toolName || op.title || "";
-      if (isOben) {
-        if (!map[toolNo].oben) map[toolNo].oben = text;
-      } else {
-        if (!map[toolNo].unten) map[toolNo].unten = text;
-      }
+      const text = (op.toolName || "").trim() || (op.title || "").trim() || "";
+      if (isOben) { if (!map[toolNo].oben) map[toolNo].oben = text; }
+      else { if (!map[toolNo].unten) map[toolNo].unten = text; }
     }
   }
 
-  addFromKanal("1", true);  // Revolver oben (Kanal 1)
-  addFromKanal("2", false); // Revolver unten (Kanal 2)
+  addFromKanal("1", true);
+  addFromKanal("2", false);
 
   const arr = Object.values(map);
-
   arr.sort((a, b) => {
-    const ta = a.toolNo || "";
-    const tb = b.toolNo || "";
-    const na =
-      ta[0] === "T" ? parseInt(ta.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
-    const nb =
-      tb[0] === "T" ? parseInt(tb.slice(1), 10) || Number.MAX_SAFE_INTEGER : Number.MAX_SAFE_INTEGER;
+    const na = a.toolNo.startsWith("T") ? (parseInt(a.toolNo.slice(1), 10) || 999999) : 999999;
+    const nb = b.toolNo.startsWith("T") ? (parseInt(b.toolNo.slice(1), 10) || 999999) : 999999;
     if (na !== nb) return na - nb;
-    return ta.localeCompare(tb);
+    return a.toolNo.localeCompare(b.toolNo);
   });
-
   return arr;
 }
 
-// ---------- PLAN (Programmplan + Einrichteblatt) ------------------------
-
+/* Render Plan */
 function renderPlan() {
   const table = $("#planTable");
   if (!table) return;
-
-  if (state.planViewMode === "EINRICHTE") {
-    renderEinrichteblatt(table);
-  } else {
-    renderProgrammplan(table);
-  }
+  if (state.planViewMode === "EINRICHTE") renderEinrichteblatt(table);
+  else renderProgrammplan(table);
 }
 
 function renderProgrammplan(table) {
@@ -1742,34 +1140,22 @@ function renderProgrammplan(table) {
   html += '<th class="sp3-head kanal-divider">Spindel 3</th>';
   html += '<th class="sp4-head">Spindel 4</th>';
   html += "</tr>";
-  html += "</thead>";
-  html += "<tbody>";
+  html += "</thead><tbody>";
 
   for (let i = 0; i < rowCount; i++) {
     const rowNumber = i + 1;
-    const op1Id = slots1[i] ?? null;
-    const op2Id = slots2[i] ?? null;
-    const op1 = op1Id ? getOperationById(op1Id) : null;
-    const op2 = op2Id ? getOperationById(op2Id) : null;
 
-    const label1 = op1
-      ? formatOperationLabelDynamic(op1, "1", rowNumber)
-      : "";
-    const label2 = op2
-      ? formatOperationLabelDynamic(op2, "2", rowNumber)
-      : "";
+    const op1 = slots1[i] ? getOperationById(slots1[i]) : null;
+    const op2 = slots2[i] ? getOperationById(slots2[i]) : null;
 
-    // Добавляем T после Lxxxx, меньше размером через неразрывный пробел
-    const tool1 = op1 && op1.toolNo ? `\u00A0${op1.toolNo}` : "";
-    const tool2 = op2 && op2.toolNo ? `\u00A0${op2.toolNo}` : "";
+    const cell1 = op1 ? formatPlanCellHtml(op1, "1", rowNumber) : "";
+    const cell2 = op2 ? formatPlanCellHtml(op2, "2", rowNumber) : "";
 
-    const text1 = label1 ? `${label1}${tool1}` : "";
-    const text2 = label2 ? `${label2}${tool2}` : "";
+    const c1sp4 = op1 && op1.spindle === "SP4" ? cell1 : "";
+    const c1sp3 = op1 && op1.spindle === "SP3" ? cell1 : "";
 
-    const c1sp3 = op1 && op1.spindle === "SP3" ? text1 : "";
-    const c1sp4 = op1 && op1.spindle === "SP4" ? text1 : "";
-    const c2sp3 = op2 && op2.spindle === "SP3" ? text2 : "";
-    const c2sp4 = op2 && op2.spindle === "SP4" ? text2 : "";
+    const c2sp3 = op2 && op2.spindle === "SP3" ? cell2 : "";
+    const c2sp4 = op2 && op2.spindle === "SP4" ? cell2 : "";
 
     html += "<tr>";
     html += `<td class="plan-row-index">${rowNumber}</td>`;
@@ -1784,8 +1170,6 @@ function renderProgrammplan(table) {
   table.innerHTML = html;
 }
 
-// *** EINRICHTEBLATT С ДВУМЯ T-СТОЛБЦАМИ ***
-
 function renderEinrichteblatt(table) {
   const data = buildEinrichteData();
 
@@ -1797,20 +1181,19 @@ function renderEinrichteblatt(table) {
   html += '<th class="plan-row-index kanal-divider">T (K2)</th>';
   html += '<th class="sp3-head">Werkzeug · Revolver unten (Kanal 2)</th>';
   html += "</tr>";
-  html += "</thead>";
-  html += "<tbody>";
+  html += "</thead><tbody>";
 
   if (!data.length) {
     html += '<tr><td colspan="4" class="plan-cell">Keine Werkzeugdaten vorhanden.</td></tr>';
   } else {
     data.forEach((row) => {
-      const t1 = row.oben ? row.toolNo : "";
-      const t2 = row.unten ? row.toolNo : "";
+      const t1 = row.oben ? escapeHtml(row.toolNo) : "";
+      const t2 = row.unten ? escapeHtml(row.toolNo) : "";
       html += "<tr>";
       html += `<td class="plan-row-index">${t1}</td>`;
-      html += `<td class="plan-cell">${row.oben || ""}</td>`;
+      html += `<td class="plan-cell">${escapeHtml(row.oben || "")}</td>`;
       html += `<td class="plan-row-index kanal-divider">${t2}</td>`;
-      html += `<td class="plan-cell">${row.unten || ""}</td>`;
+      html += `<td class="plan-cell">${escapeHtml(row.unten || "")}</td>`;
       html += "</tr>";
     });
   }
@@ -1819,39 +1202,43 @@ function renderEinrichteblatt(table) {
   table.innerHTML = html;
 }
 
-// ---------- EXPORT PDF --------------------------------------------------
-
+/* Export PDF */
 function initExportButton() {
   const btn = $("#exportPdfBtn");
   if (!btn) return;
-  btn.addEventListener("click", () => {
-    window.print();
-  });
+  btn.addEventListener("click", () => window.print());
 }
 
-// ---------- INIT --------------------------------------------------------
+/* Render all */
+function renderAll() {
+  renderSlots();
+  renderLibraryFilters();
+  renderLibraryList();
+  renderPlan();
+  updatePlanViewSwitcherUI();
+}
 
+/* INIT */
 function init() {
+  initPWA();
+
   const loaded = loadFromLocal();
   if (!loaded) {
     applyLoadedState(DEFAULT_DATA);
     touchState();
   }
 
+  initModalBaseEvents();
+  initJsonExportImport();
+
   initKanalSwitcher();
   initAddSlotButton();
   initAddOperationButton();
-  initModalBaseEvents();
-  initExportButton();
-  initJsonExportImport();
-  initPlanViewSwitcher();
-  initLibraryCollapse();
 
-  renderSlots();
-  renderLibraryFilters();
-  renderLibraryList();
-  renderPlan();
-  updatePlanViewSwitcherUI();
+  initPlanViewSwitcher();
+  initExportButton();
+
+  renderAll();
 }
 
 document.addEventListener("DOMContentLoaded", init);
