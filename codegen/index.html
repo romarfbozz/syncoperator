@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>CitiTool · CodeGen</title>
+  <link rel="stylesheet" href="./codegen.css" />
+</head>
+
+<body>
+  <div class="cg-shell">
+    <header class="cg-header">
+      <div class="cg-brand">
+        <div class="cg-logo" aria-hidden="true">
+          <span class="cg-logo-c">C</span>
+        </div>
+        <div class="cg-brand-text">
+          <div class="cg-title">CITITOOL</div>
+          <div class="cg-subtitle">CodeGen · MPF Struktur / Gruppen</div>
+        </div>
+      </div>
+
+      <div class="cg-actions">
+        <div class="cg-switch" role="tablist" aria-label="MPF Switch">
+          <button class="cg-switch-btn active" data-mpf="1000" role="tab" aria-selected="true">
+            1000.MPF
+          </button>
+          <button class="cg-switch-btn" data-mpf="2000" role="tab" aria-selected="false">
+            2000.MPF
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <main class="cg-main">
+      <section class="cg-card">
+        <div class="cg-card-head">
+          <div>
+            <div class="cg-card-title" id="mpfTitle">CHAN1 · 1000.MPF</div>
+            <div class="cg-card-hint">Gruppen aus <code>GROUP_BEGIN … GROUP_END</code> (nach <code>###_GENERATED_CODE_START_###</code>)</div>
+          </div>
+          <div class="cg-card-tools">
+            <button class="cg-btn ghost" id="collapseAllBtn" type="button">Alles zu</button>
+            <button class="cg-btn ghost" id="expandAllBtn" type="button">Alles auf</button>
+          </div>
+        </div>
+
+        <div id="opsList" class="cg-ops"></div>
+      </section>
+    </main>
+  </div>
+
+  <script src="./codegen.js"></script>
+</body>
+</html>
